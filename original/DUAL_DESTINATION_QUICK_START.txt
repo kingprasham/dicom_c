@@ -1,0 +1,204 @@
+================================================================================
+ DUAL DESTINATION - QUICK START (3 STEPS)
+================================================================================
+
+GOAL: Configure MRI to send DICOM studies to BOTH production and localhost
+      simultaneously for real-time data without sync delays.
+
+================================================================================
+STEP 1: PREPARE YOUR PC (10 minutes)
+================================================================================
+
+1a. Get Your IP Address
+-----------------------
+  Windows Key + R → cmd → ipconfig
+  Find: IPv4 Address (example: 192.168.1.150)
+
+  WRITE IT DOWN: ___.___.___.___
+
+1b. Setup Firewall
+------------------
+  Right-click: SETUP_FIREWALL_RULES.bat
+  Select: "Run as Administrator"
+  Verify: Shows "SUCCESS! Firewall rule created"
+
+1c. Verify Readiness
+--------------------
+  Double-click: VERIFY_DUAL_DESTINATION_READY.bat
+  Check: All checks should show [OK]
+
+  If any [FAIL]:
+    - Orthanc not running → Start Orthanc service
+    - Firewall rule missing → Run Step 1b as admin
+    - Apache/MySQL not running → Start in XAMPP Control Panel
+
+================================================================================
+STEP 2: CONFIGURE MRI MACHINE (15 minutes)
+================================================================================
+
+2a. Access MRI DICOM Settings
+------------------------------
+  Varies by manufacturer - see DUAL_DESTINATION_SETUP.txt for specifics
+
+2b. Add Localhost Destination
+------------------------------
+  IMPORTANT: ADD new destination, DON'T replace existing!
+
+  Configuration:
+    Name: LOCALHOST_PACS
+    AE Title: HOSPITAL_PACS
+    IP Address: [Your IP from Step 1a]
+    Port: 4242
+    Status: ENABLED
+
+  Example (SIEMENS):
+    Service → Network → DICOM Storage → Add New
+    → Fill in details above → Save
+
+2c. Keep Production Destination
+--------------------------------
+  VERIFY existing production destination is still there:
+    Name: HOSPITAL_PACS / Production Server
+    Status: ENABLED
+
+  DO NOT delete or disable production!
+
+2d. Configure Auto-Send
+-----------------------
+  Enable: "Auto Store After Acquisition"
+  Destinations: ☑ HOSPITAL_PACS (Production)
+                ☑ LOCALHOST_PACS (Your PC)
+
+================================================================================
+STEP 3: TEST & VERIFY (5 minutes)
+================================================================================
+
+3a. Send Test Study
+-------------------
+  1. Create phantom/test scan on MRI
+  2. Complete scan
+  3. Verify MRI console shows successful send to BOTH destinations
+
+3b. Verify Localhost Received
+------------------------------
+  Open: http://localhost:8042
+  Login: orthanc / orthanc
+  Check: Test study should appear within 30 seconds
+
+3c. Verify Production Received
+-------------------------------
+  Check production Orthanc still receives (as before)
+
+3d. Sync to Localhost Database
+-------------------------------
+  Open: http://localhost/papa/dicom_again/sync_orthanc.php
+  Verify: Shows "SYNC SUCCESSFUL" with 1 study added
+
+3e. View in Web Interface
+--------------------------
+  Open: http://localhost/papa/dicom_again/pages/patients.html
+  Login: admin / admin123
+  Check: Test patient appears in list
+
+================================================================================
+SUCCESS!
+================================================================================
+
+If all steps above work, your dual destination is configured!
+
+Now when MRI sends studies:
+  → Production Orthanc receives (as before) ✓
+  → Localhost Orthanc receives (NEW!) ✓
+  → Both happen simultaneously
+  → No sync delays
+  → No internet dependency
+
+================================================================================
+TROUBLESHOOTING
+================================================================================
+
+MRI sends to production but NOT localhost:
+  1. Check firewall: SETUP_FIREWALL_RULES.bat (as admin)
+  2. Verify Orthanc running: http://localhost:8042
+  3. From MRI console, ping your PC IP
+  4. Check AE Title matches: HOSPITAL_PACS
+  5. Verify localhost destination ENABLED on MRI
+
+Localhost receives but not in database:
+  1. Run: http://localhost/papa/dicom_again/sync_orthanc.php
+  2. Check Apache/MySQL running in XAMPP
+  3. Verify no errors in sync output
+
+Network performance issues:
+  1. Use wired Ethernet (not Wi-Fi)
+  2. Ensure Gigabit network adapter
+  3. Monitor network utilization
+
+================================================================================
+DAILY USAGE
+================================================================================
+
+After setup, normal operation is:
+
+1. MRI sends study → Both servers receive automatically
+2. Run sync: http://localhost/papa/dicom_again/sync_orthanc.php
+   (or setup auto-sync every 5 minutes)
+3. View patients: http://localhost/papa/dicom_again/pages/patients.html
+
+No manual sync from production needed!
+No internet required!
+Both systems independent and reliable!
+
+================================================================================
+FILES REFERENCE
+================================================================================
+
+SETUP_FIREWALL_RULES.bat
+  → Configure Windows Firewall for DICOM
+
+VERIFY_DUAL_DESTINATION_READY.bat
+  → Check if PC is ready to receive DICOM
+
+DUAL_DESTINATION_SETUP.txt
+  → Complete detailed guide (read this for full info)
+
+sync_orthanc.php
+  → Sync localhost Orthanc → localhost database
+
+sync_from_production.php
+  → Backup option: sync production → localhost
+    (not needed if dual destination works)
+
+================================================================================
+NEXT STEPS
+================================================================================
+
+Optional enhancements:
+
+□ Setup auto-sync every 5 minutes (see DUAL_DESTINATION_SETUP.txt Step 4.2)
+□ Configure static IP (recommended for reliability)
+□ Setup Windows auto-start for Orthanc service
+□ Monitor both systems daily for consistency
+□ Document MRI configuration for future reference
+
+================================================================================
+QUESTIONS?
+================================================================================
+
+See comprehensive guide: DUAL_DESTINATION_SETUP.txt
+
+Includes:
+  - Detailed step-by-step instructions
+  - Manufacturer-specific MRI configurations
+  - Complete troubleshooting section
+  - Network topology considerations
+  - Maintenance best practices
+
+================================================================================
+
+Your system is now configured for REAL-TIME dual destination!
+Both production and localhost receive DICOM studies simultaneously.
+
+No more sync delays! No more production dependency!
+
+================================================================================

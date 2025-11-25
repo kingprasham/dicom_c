@@ -1,0 +1,354 @@
+================================================================================
+ FIX: DICOM Viewer Image Load Error on Localhost
+================================================================================
+
+PROBLEM:
+--------
+When viewing DICOM images on localhost, you see "image load error undefined"
+This happens because the browser blocks cross-origin requests from the viewer
+to Orthanc (CORS - Cross-Origin Resource Sharing issue).
+
+ROOT CAUSE:
+-----------
+The DICOM viewer (running at http://localhost/papa/dicom_again/index.php)
+tries to load DICOM files from Orthanc (running at http://localhost:8042)
+
+Browser blocks this as a "cross-origin" request because:
+  - Viewer origin: http://localhost/papa/dicom_again
+  - Orthanc origin: http://localhost:8042
+  - Different "origins" (different paths/ports)
+
+SOLUTION:
+---------
+Enable CORS in Orthanc configuration to allow the viewer to access DICOM files.
+
+================================================================================
+ FIX STEPS
+================================================================================
+
+STEP 1: Find Orthanc Configuration File
+----------------------------------------
+Location: C:\Program Files\Orthanc Server\Configuration\orthanc.json
+
+If you can't find it:
+  1. Open File Explorer
+  2. Navigate to: C:\Program Files\Orthanc Server\
+  3. Look for "Configuration" folder
+  4. Open orthanc.json
+
+STEP 2: Backup Original Configuration
+--------------------------------------
+Before making changes:
+  1. Copy orthanc.json
+  2. Rename copy to: orthanc.json.backup
+  3. Keep this as backup
+
+STEP 3: Edit Configuration File
+--------------------------------
+Open orthanc.json in Notepad++ or any text editor
+
+Find the line with "HttpServerEnabled" (or add CORS settings)
+
+ADD THESE LINES (or update if they exist):
+
+  "HttpServerEnabled" : true,
+  "RemoteAccessAllowed" : true,
+
+  "HttpsCACertificates" : "",
+
+  "SslEnabled" : false,
+
+  "HttpsCertificate" : "",
+
+  "HttpsPrivateKey" : "",
+
+  "HttpCompressionEnabled" : true,
+
+  "HttpDescribeErrors" : true,
+
+  "HttpThreadsCount" : 50,
+
+  "HttpRequestTimeout" : 30,
+
+  "HttpVerbose" : false,
+
+  "KeepAlive" : true,
+
+  "TcpNoDelay" : true,
+
+  "CorsEnabled" : true,
+
+  "CorsAllowedOrigins" : "*",
+
+  "CorsAllowedMethods" : "GET,POST,PUT,DELETE,OPTIONS",
+
+  "CorsAllowedHeaders" : "*",
+
+  "CorsMaxAge" : 3600
+
+IMPORTANT SETTINGS:
+  - "CorsEnabled" : true  ← Must be true!
+  - "CorsAllowedOrigins" : "*"  ← Allows all origins
+  - "RemoteAccessAllowed" : true  ← Allows remote access
+
+STEP 4: Save Configuration
+---------------------------
+  1. Save the file (Ctrl+S)
+  2. Close editor
+
+STEP 5: Restart Orthanc Service
+--------------------------------
+
+METHOD A - Using Services:
+  1. Windows Key + R → type: services.msc → Enter
+  2. Find "Orthanc Service"
+  3. Right-click → Restart
+  4. Wait 10 seconds
+
+METHOD B - Using Command Line:
+  1. Open Command Prompt as Administrator
+  2. Run: net stop "Orthanc Service"
+  3. Wait 5 seconds
+  4. Run: net start "Orthanc Service"
+
+METHOD C - Reboot PC:
+  Simply restart Windows (if above methods don't work)
+
+STEP 6: Verify CORS is Enabled
+-------------------------------
+  1. Open browser
+  2. Go to: http://localhost:8042/system
+  3. Login: orthanc / orthanc
+  4. Should see JSON with system info
+  5. Check browser console (F12) - no CORS errors
+
+STEP 7: Test DICOM Viewer
+--------------------------
+  1. Go to: http://localhost/papa/dicom_again/pages/patients.html
+  2. Login: admin / admin123
+  3. Select a patient → Select study → Click "Open"
+  4. index.php should load
+  5. DICOM images should display correctly!
+
+================================================================================
+ COMPLETE CONFIGURATION EXAMPLE
+================================================================================
+
+Here's a sample orthanc.json with CORS enabled:
+
+{
+  "Name" : "Hospital PACS",
+
+  "HttpPort" : 8042,
+  "HttpServerEnabled" : true,
+  "RemoteAccessAllowed" : true,
+
+  "DicomPort" : 4242,
+  "DicomAet" : "ORTHANC",
+
+  "DicomCheckCalledAet" : false,
+  "DicomCheckModalityHost" : false,
+
+  "DicomModalities" : {},
+  "DicomModalitiesInDatabase" : {
+    "ANY-SCP" : true
+  },
+
+  "UnknownSopClassAccepted" : true,
+
+  "CorsEnabled" : true,
+  "CorsAllowedOrigins" : "*",
+  "CorsAllowedMethods" : "GET,POST,PUT,DELETE,OPTIONS",
+  "CorsAllowedHeaders" : "*",
+  "CorsMaxAge" : 3600,
+
+  "AuthenticationEnabled" : true,
+  "RegisteredUsers" : {
+    "orthanc" : "orthanc"
+  },
+
+  "StorageDirectory" : "C:/HospitalDICOM/OrthancStorage",
+  "IndexDirectory" : "C:/HospitalDICOM/OrthancDatabase",
+
+  "MaximumStorageSize" : 0,
+  "MaximumPatientCount" : 0,
+
+  "OverwriteInstances" : false,
+  "StorageCompression" : false,
+
+  "HttpThreadsCount" : 50,
+  "HttpCompressionEnabled" : true,
+  "HttpRequestTimeout" : 30,
+
+  "KeepAlive" : true,
+  "TcpNoDelay" : true
+}
+
+COPY THIS if you want a complete working configuration.
+
+================================================================================
+ ALTERNATIVE FIX (If CORS doesn't work)
+================================================================================
+
+If enabling CORS doesn't fix the issue, use PHP proxy instead:
+
+STEP 1: Create Proxy Script
+----------------------------
+File already exists: api/get_dicom_from_storage.php
+
+This script fetches DICOM from Orthanc server-side (no CORS issue)
+
+STEP 2: Update Viewer Configuration
+------------------------------------
+The viewer should automatically use this for localhost.
+
+Verify in index.php around line 271:
+  return `wadouri:http://localhost:8042/instances/${instanceId}/file`;
+
+Change to:
+  return `wadouri:api/get_dicom_from_storage.php?instanceId=${instanceId}`;
+
+STEP 3: Test Again
+------------------
+Reload viewer - images should load via PHP proxy
+
+================================================================================
+ TROUBLESHOOTING
+================================================================================
+
+PROBLEM: Still getting "image load error" after CORS fix
+---------------------------------------------------------
+CAUSE: Orthanc configuration not applied or syntax error
+
+FIX:
+  1. Check Orthanc service is running (services.msc)
+  2. Check orthanc.json for syntax errors:
+     - All commas in right places
+     - All quotes matched
+     - Valid JSON format
+  3. Check Orthanc logs for errors:
+     C:\Program Files\Orthanc Server\Logs\
+  4. Try restarting Orthanc again
+
+---
+
+PROBLEM: Can't edit orthanc.json (Access Denied)
+-------------------------------------------------
+CAUSE: Insufficient permissions
+
+FIX:
+  1. Right-click Notepad++ (or editor)
+  2. "Run as Administrator"
+  3. Open orthanc.json from admin editor
+  4. Make changes
+  5. Save
+
+---
+
+PROBLEM: Orthanc won't start after configuration change
+--------------------------------------------------------
+CAUSE: Syntax error in JSON
+
+FIX:
+  1. Restore backup: orthanc.json.backup
+  2. Rename backup to orthanc.json
+  3. Restart Orthanc
+  4. Try editing again more carefully
+  5. Validate JSON at: https://jsonlint.com
+
+---
+
+PROBLEM: CORS enabled but viewer still shows CORS error in console
+-------------------------------------------------------------------
+CAUSE: Browser cached old response
+
+FIX:
+  1. Hard refresh browser (Ctrl+Shift+R)
+  2. Clear browser cache (Ctrl+Shift+Delete)
+  3. Or use Incognito/Private window
+  4. Test again
+
+---
+
+PROBLEM: Images load but are black/empty
+-----------------------------------------
+CAUSE: Different issue - DICOM file corruption or wrong format
+
+FIX:
+  1. Verify images load in Orthanc Explorer: http://localhost:8042
+  2. If they load there, viewer configuration issue
+  3. Check browser console for specific errors
+  4. Try different study
+
+================================================================================
+ SECURITY NOTE
+================================================================================
+
+Setting "CorsAllowedOrigins" : "*" allows ALL websites to access your Orthanc.
+
+For PRODUCTION:
+  Change to specific domain:
+    "CorsAllowedOrigins" : "https://e-connect.in"
+
+For LOCALHOST (development):
+  "*" is fine since only accessible on your PC
+
+For HOSPITAL NETWORK:
+  Restrict to specific IPs/domains for security
+
+================================================================================
+ VERIFICATION CHECKLIST
+================================================================================
+
+After applying the fix:
+
+□ orthanc.json edited with CORS settings
+□ Configuration file saved
+□ Orthanc service restarted
+□ http://localhost:8042 still accessible
+□ Login to Orthanc works (orthanc/orthanc)
+□ Browser console shows no CORS errors (F12)
+□ DICOM viewer loads study without errors
+□ Images display correctly in viewer
+
+If all checked: ✓ CORS is working!
+
+================================================================================
+ QUICK FIX SCRIPT (Future Enhancement)
+================================================================================
+
+Could create a batch script to automate this:
+  1. Backup orthanc.json
+  2. Add CORS settings
+  3. Restart Orthanc service
+  4. Verify configuration
+
+For now, manual steps above are safest.
+
+================================================================================
+ SUMMARY
+================================================================================
+
+PROBLEM:
+  Image load error in DICOM viewer on localhost
+
+ROOT CAUSE:
+  CORS (Cross-Origin Resource Sharing) not enabled in Orthanc
+
+SOLUTION:
+  1. Edit: C:\Program Files\Orthanc Server\Configuration\orthanc.json
+  2. Add: "CorsEnabled" : true
+  3. Add: "CorsAllowedOrigins" : "*"
+  4. Restart Orthanc service
+  5. Test viewer
+
+ALTERNATIVE:
+  Use PHP proxy (api/get_dicom_from_storage.php) to avoid CORS
+
+TIME REQUIRED:
+  5-10 minutes
+
+DIFFICULTY:
+  Easy (just edit one file)
+
+================================================================================

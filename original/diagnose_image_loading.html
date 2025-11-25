@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Diagnose Image Loading</title>
+    <style>
+        body {
+            background: #1a1a1a;
+            color: #0f0;
+            font-family: 'Courier New', monospace;
+            padding: 20px;
+            font-size: 14px;
+        }
+        .log-entry {
+            padding: 8px;
+            margin: 4px 0;
+            border-left: 3px solid #0f0;
+            background: #000;
+        }
+        .error { border-left-color: #f00; color: #f00; }
+        .success { border-left-color: #0f0; color: #0f0; }
+        .info { border-left-color: #0af; color: #0af; }
+        .warn { border-left-color: #fa0; color: #fa0; }
+        #viewport {
+            width: 512px;
+            height: 512px;
+            border: 2px solid #0f0;
+            margin: 20px 0;
+            background: #000;
+        }
+        button {
+            background: #0a0;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover { background: #0f0; }
+    </style>
+</head>
+<body>
+    <h1>DICOM Image Loading Diagnostics</h1>
+    <div id="logs"></div>
+    <div id="viewport"></div>
+
+    <script src="https://unpkg.com/cornerstone-core@2.6.1/dist/cornerstone.min.js"></script>
+    <script src="https://unpkg.com/cornerstone-math@0.1.10/dist/cornerstoneMath.min.js"></script>
+    <script src="https://unpkg.com/cornerstone-tools@6.0.10/dist/cornerstoneTools.min.js"></script>
+    <script src="https://unpkg.com/dicom-parser@1.8.21/dist/dicomParser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/cornerstone-wado-image-loader@3.1.2/dist/cornerstoneWADOImageLoader.min.js"></script>
+
+    <script>
+        const logs = document.getElementById('logs');
+        const viewport = document.getElementById('viewport');
+
+        function log(message, type = 'info') {
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logs.appendChild(entry);
+            console.log(`[${type.toUpperCase()}]`, message);
+            logs.scrollTop = logs.scrollHeight;
+        }
+
+        async function runDiagnostics() {
+            try {
+                log('='.repeat(80), 'info');
+                log('STARTING DIAGNOSTICS', 'info');
+                log('='.repeat(80), 'info');
+
+                // Step 1: Check if libraries loaded
+                log('Step 1: Checking library dependencies...', 'info');
+                if (typeof cornerstone === 'undefined') throw new Error('cornerstone is not loaded');
+                log('✓ Cornerstone loaded', 'success');
+
+                if (typeof cornerstoneWADOImageLoader === 'undefined') throw new Error('cornerstoneWADOImageLoader is not loaded');
+                log('✓ cornerstoneWADOImageLoader loaded', 'success');
+
+                if (typeof dicomParser === 'undefined') throw new Error('dicomParser is not loaded');
+                log('✓ dicomParser loaded', 'success');
+
+                // Step 2: Initialize Cornerstone
+                log('Step 2: Initializing Cornerstone...', 'info');
+                cornerstone.enable(viewport);
+                log('✓ Cornerstone viewport enabled', 'success');
+
+                // Step 3: Configure WADO Image Loader
+                log('Step 3: Configuring WADO Image Loader...', 'info');
+                cornerstoneWADOImageLoader.external.cornerstone = cornerstone;
+                cornerstoneWADOImageLoader.external.dicomParser = dicomParser;
+
+                const config = {
+                    webWorkerPath: 'https://cdn.jsdelivr.net/npm/cornerstone-wado-image-loader@3.1.2/dist/cornerstoneWADOImageLoaderWebWorker.min.js',
+                    taskConfiguration: {
+                        decodeTask: { initializeCodecsOnStartup: false }
+                    }
+                };
+                cornerstoneWADOImageLoader.webWorkerManager.initialize(config);
+                log('✓ WADO Loader configured', 'success');
+
+                // Step 4: Test PHP proxy accessibility
+                log('Step 4: Testing PHP proxy accessibility...', 'info');
+                const instanceId = '47739cb2-3e5416ff-981ea238-36b30063-4722ce98';
+                const proxyUrl = `http://localhost/papa/dicom_again/api/get_dicom_from_orthanc.php?instanceId=${instanceId}`;
+
+                log(`Testing URL: ${proxyUrl}`, 'info');
+
+                try {
+                    const testResponse = await fetch(proxyUrl);
+                    const contentLength = testResponse.headers.get('content-length');
+                    const contentType = testResponse.headers.get('content-type');
+
+                    log(`✓ HTTP Status: ${testResponse.status}`, testResponse.ok ? 'success' : 'error');
+                    log(`✓ Content-Type: ${contentType}`, contentType === 'application/dicom' ? 'success' : 'warn');
+                    log(`✓ Content-Length: ${contentLength} bytes`, contentLength > 0 ? 'success' : 'error');
+
+                    if (!testResponse.ok) {
+                        const errorText = await testResponse.text();
+                        log(`Error response: ${errorText}`, 'error');
+                        throw new Error(`HTTP ${testResponse.status}: ${errorText}`);
+                    }
+                } catch (fetchError) {
+                    log(`✗ Fetch failed: ${fetchError.message}`, 'error');
+                    throw fetchError;
+                }
+
+                // Step 5: Test Cornerstone image loading
+                log('Step 5: Testing Cornerstone image loading...', 'info');
+                const imageId = `wadouri:${proxyUrl}`;
+                log(`Image ID: ${imageId}`, 'info');
+
+                try {
+                    const image = await cornerstone.loadImage(imageId);
+                    log(`✓ Image loaded successfully!`, 'success');
+                    log(`  - Dimensions: ${image.width} x ${image.height}`, 'success');
+                    log(`  - Color: ${image.color ? 'Yes' : 'No'}`, 'success');
+                    log(`  - Min Pixel: ${image.minPixelValue}`, 'success');
+                    log(`  - Max Pixel: ${image.maxPixelValue}`, 'success');
+
+                    // Step 6: Display image
+                    log('Step 6: Displaying image...', 'info');
+                    cornerstone.displayImage(viewport, image);
+                    log('✓ Image displayed successfully!', 'success');
+
+                    log('='.repeat(80), 'success');
+                    log('ALL TESTS PASSED! Image loading is working correctly.', 'success');
+                    log('='.repeat(80), 'success');
+
+                } catch (loadError) {
+                    log(`✗ Cornerstone loadImage failed: ${loadError.message}`, 'error');
+                    log(`Error type: ${loadError.constructor.name}`, 'error');
+                    log(`Stack trace: ${loadError.stack}`, 'error');
+
+                    // Additional diagnostics
+                    if (loadError.message.includes('decodeTask')) {
+                        log('HINT: This might be a decoder/codec issue', 'warn');
+                    } else if (loadError.message.includes('404')) {
+                        log('HINT: The DICOM file was not found at the URL', 'warn');
+                    } else if (loadError.message.includes('CORS')) {
+                        log('HINT: This is a CORS (Cross-Origin) issue', 'warn');
+                    }
+
+                    throw loadError;
+                }
+
+            } catch (error) {
+                log('='.repeat(80), 'error');
+                log(`DIAGNOSTICS FAILED: ${error.message}`, 'error');
+                log('='.repeat(80), 'error');
+                console.error('Full error:', error);
+            }
+        }
+
+        // Auto-run diagnostics on page load
+        window.addEventListener('load', () => {
+            setTimeout(runDiagnostics, 500);
+        });
+    </script>
+</body>
+</html>

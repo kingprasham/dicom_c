@@ -1,0 +1,351 @@
+================================================================================
+ TEST DICOM RECEPTION ON LOCALHOST
+================================================================================
+
+GOAL: Verify your localhost Orthanc can receive DICOM data
+
+YOUR CONFIGURATION:
+-------------------
+Localhost IP: 192.168.0.102
+Orthanc Port: 4242
+Orthanc AE Title: ORTHANC
+Status: Orthanc IS listening on port 4242 ✓
+
+APP CONFIGURATION:
+------------------
+Location: Prasham
+IP: 192.168.0.102
+Port: 4242
+AE Title: ORTHANC
+
+This SHOULD work! But data goes to production instead of localhost.
+
+================================================================================
+ CRITICAL QUESTION
+================================================================================
+
+WHERE IS YOUR DICOM SENDING APP RUNNING?
+
+Option A: On THIS PC (192.168.0.102)
+   → App and Orthanc on same computer
+   → Should definitely work
+   → Most likely: App is selecting wrong destination
+
+Option B: On DIFFERENT device (phone, tablet, another PC)
+   → App sends over network to your PC
+   → Network might be routing incorrectly
+   → Need to verify network path
+
+PLEASE IDENTIFY:
+  □ What device is the app running on?
+  □ What is the app name?
+  □ Does the app have multiple destination configurations?
+
+================================================================================
+ DIAGNOSTIC TESTS
+================================================================================
+
+TEST 1: Verify App Destination Selection
+-----------------------------------------
+In your DICOM sending app:
+
+1. Open destination list/settings
+2. Look for ALL configured destinations
+3. Check if you see:
+   - "Prasham" (IP: 192.168.0.102) ← This one
+   - Any other destinations?
+   - Production server destination?
+
+COMMON ISSUE:
+  Apps often have multiple destinations saved.
+  You might have:
+    - Destination 1: "Production" → [Production Server IP]
+    - Destination 2: "Prasham" → 192.168.0.102
+
+  If you're selecting "Production" by mistake, data goes to production!
+
+ACTION:
+  ✓ Verify you're selecting the "Prasham" destination
+  ✓ Check destination IP is actually 192.168.0.102
+  ✓ Some apps show IP in the destination selector
+
+---
+
+TEST 2: Verify App is Sending to Correct IP
+--------------------------------------------
+Right after you send from the app, immediately check:
+
+METHOD A - Check Orthanc patients:
+  http://localhost:8042
+  Login: orthanc / orthanc
+  Refresh page - does new patient appear?
+
+METHOD B - Check with curl:
+  curl -u orthanc:orthanc http://localhost:8042/patients
+  Compare count before and after send
+
+If patient appears:
+  ✓ SUCCESS! Localhost IS receiving!
+  → Then you need to sync database
+
+If patient does NOT appear:
+  ✗ App is NOT sending to localhost
+  → Check app destination selection
+  → Or network routing issue
+
+---
+
+TEST 3: Check Connection in Real-Time
+--------------------------------------
+Before sending from app, run this command:
+
+  netstat -ano | findstr :4242
+
+You'll see:
+  TCP    0.0.0.0:4242    0.0.0.0:0    LISTENING    6796
+
+Now SEND from app, then IMMEDIATELY run again:
+  netstat -ano | findstr :4242
+
+If you see ESTABLISHED connection:
+  TCP    192.168.0.102:4242    [some IP]:5432    ESTABLISHED    6796
+
+  ✓ App IS connecting to localhost!
+  → Orthanc should receive data
+
+If you DON'T see any ESTABLISHED connection:
+  ✗ App is NOT connecting to localhost
+  → Check app configuration
+  → App might be sending elsewhere
+
+---
+
+TEST 4: Send Test from THIS PC
+-------------------------------
+To verify localhost Orthanc can receive, send from THIS PC:
+
+OPTION A - Using Web Browser (Simplest):
+  1. Go to: http://localhost:8042
+  2. Login: orthanc / orthanc
+  3. Click "Upload" button
+  4. Select a DICOM file (.dcm)
+  5. Upload
+  6. Refresh - should appear in Orthanc
+
+OPTION B - Using DCMTK (if installed):
+  storescu -aec ORTHANC localhost 4242 test.dcm
+
+If this works:
+  ✓ Localhost Orthanc CAN receive data
+  → Problem is with your app configuration
+
+If this fails:
+  ✗ Orthanc has configuration issue
+  → Check Orthanc Configuration.json
+
+---
+
+TEST 5: Check App Logs/Status
+------------------------------
+After sending from app:
+
+1. Check app status/logs
+2. Look for:
+   - "Transfer complete"
+   - "Failed to connect"
+   - "Timeout"
+   - Destination IP shown
+
+3. Verify IP shown is 192.168.0.102
+
+If app shows different IP:
+  → You're sending to wrong destination
+  → Select correct destination in app
+
+If app shows 192.168.0.102 but Orthanc doesn't receive:
+  → Firewall blocking (unlikely, since Orthanc is listening)
+  → Network routing issue
+  → Antivirus interfering
+
+================================================================================
+ MOST LIKELY ISSUES (Ranked)
+================================================================================
+
+1. APP SELECTING WRONG DESTINATION (80% probability)
+   → App has multiple destinations configured
+   → You're selecting production instead of "Prasham"
+   → Solution: Double-check destination selection before sending
+
+2. APP RUNNING ON DIFFERENT DEVICE (15% probability)
+   → App on phone/tablet trying to reach 192.168.0.102
+   → Network routing sends it to production instead
+   → Solution: Use app on THIS PC, or fix network routing
+
+3. APP NOT SAVING CONFIGURATION (3% probability)
+   → You configured Prasham destination
+   → But app didn't save it
+   → Still using old/default destination
+   → Solution: Re-configure and ensure it saves
+
+4. FIREWALL/ANTIVIRUS BLOCKING (2% probability)
+   → External app trying to connect
+   → Windows Firewall or antivirus blocks it
+   → Solution: Temporarily disable and test
+
+================================================================================
+ SOLUTION STEPS
+================================================================================
+
+STEP 1: Identify Your App Device
+---------------------------------
+Answer these questions:
+  □ What device is the app running on?
+  □ What is the app name?
+  □ Is it on the same PC as Orthanc (192.168.0.102)?
+
+STEP 2: Check App Destination List
+-----------------------------------
+In the app:
+  1. Open settings/configuration
+  2. View all saved destinations
+  3. List them:
+     - Name: ______ IP: ______
+     - Name: ______ IP: ______
+
+STEP 3: Verify Destination Before Sending
+------------------------------------------
+Before sending next study:
+  1. Look at app screen
+  2. Which destination is SELECTED?
+  3. Does it show: "Prasham" or IP: 192.168.0.102?
+
+STEP 4: Send and Monitor
+-------------------------
+1. Send from app
+2. IMMEDIATELY check: http://localhost:8042
+3. Refresh page
+4. Does new patient appear?
+
+IF YES:
+  ✓ Localhost IS receiving!
+  → Run: http://localhost/papa/dicom_again/sync_orthanc.php
+  → Data will appear in web interface
+
+IF NO:
+  → App is sending elsewhere
+  → Check Steps 1-3 again
+
+STEP 5: Check Production
+-------------------------
+After sending, check production:
+  https://e-connect.in/dicom/pages/patients.html
+
+If data appears in production:
+  → App sent to production IP, not localhost
+  → Find out what that IP is
+  → Reconfigure app
+
+================================================================================
+ ALTERNATIVE SOLUTION
+================================================================================
+
+If you CANNOT get app to send to localhost:
+
+OPTION 1: Configure App to Send to Production Only
+  → Let app keep sending to production (as it's doing now)
+  → Use sync script to pull to localhost:
+    http://localhost/papa/dicom_again/sync_from_production.php
+  → Or enable auto-sync: AUTO_SYNC_HIDDEN.vbs
+
+OPTION 2: Run App on This PC
+  → Install app on THIS PC (192.168.0.102)
+  → Configure destination as: localhost or 127.0.0.1
+  → This guarantees data goes to localhost Orthanc
+
+OPTION 3: Find Production Server IP
+  → Find what IP the app is actually sending to
+  → That might be production server
+  → Add that IP to your app as separate destination
+  → Send to BOTH destinations
+
+================================================================================
+ IMMEDIATE ACTION
+================================================================================
+
+RIGHT NOW, do this:
+
+1. Open your DICOM sending app
+2. Look at the screen - what destination is selected?
+3. Take a screenshot if possible
+4. Send one test study
+5. IMMEDIATELY check: http://localhost:8042 (refresh)
+6. Report back:
+   - Did patient appear in localhost? YES/NO
+   - What destination was shown in app?
+   - Any error messages?
+
+This will tell us exactly what's happening!
+
+================================================================================
+ QUESTIONS TO ANSWER
+================================================================================
+
+To help you further, please tell me:
+
+1. What is the name of your DICOM sending app?
+   (Example: MicroDicom, Horos, OsiriX, RadiAnt, etc.)
+
+2. What device is it running on?
+   □ This PC (192.168.0.102)
+   □ Different PC
+   □ Phone/Tablet
+   □ Other: __________
+
+3. When you send, what does the app show?
+   - Selected destination name?
+   - IP address displayed?
+   - Success/error message?
+
+4. Does the app have multiple destinations saved?
+   - How many?
+   - What are their names?
+
+5. After sending, did you check http://localhost:8042 immediately?
+   - Did new patient appear? YES/NO
+
+================================================================================
+ QUICK TEST PROCEDURE
+================================================================================
+
+To definitively determine if localhost is receiving:
+
+BEFORE SENDING:
+  curl -u orthanc:orthanc http://localhost:8042/patients
+  → Note the count
+
+SEND FROM APP:
+  → Send one test study
+
+AFTER SENDING:
+  curl -u orthanc:orthanc http://localhost:8042/patients
+  → Check if count increased
+
+IF COUNT INCREASED:
+  ✓ Localhost IS receiving!
+  → Just need to sync database
+  → Run: sync_orthanc.php
+
+IF COUNT DID NOT INCREASE:
+  ✗ Localhost NOT receiving
+  → App sending elsewhere
+  → Need to fix app configuration
+
+================================================================================
+
+SUMMARY: Your Orthanc configuration is correct. The issue is likely that
+your app is sending to a different destination (production) instead of
+the "Prasham" configuration you created.
+
+Please verify the app's selected destination before sending!
+
+================================================================================

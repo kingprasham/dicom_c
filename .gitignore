@@ -1,0 +1,75 @@
+# Hospital DICOM Viewer Pro v2.0 - Git Ignore
+
+# Environment Configuration
+config/.env
+.env
+
+# Composer
+/vendor/
+composer.lock
+
+# Logs
+/logs/*.log
+/logs/*.txt
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.DS_Store
+Thumbs.db
+
+# Temporary Files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Uploaded Files (DICOM data should be in Orthanc, not repo)
+/uploads/*
+!/uploads/.gitkeep
+
+# Backups
+/backups/*.zip
+/backups/*.sql
+!/backups/.gitkeep
+
+# Cache
+/cache/*
+!/cache/.gitkeep
+
+# Session Files
+/sessions/*
+!/sessions/.gitkeep
+
+# Database Dumps
+*.sql
+!setup/schema_v2_production.sql
+
+# Windows
+desktop.ini
+ehthumbs.db
+
+# macOS
+.AppleDouble
+.LSOverride
+
+# Node (if using any build tools in future)
+node_modules/
+package-lock.json
+
+# Google API Credentials
+credentials.json
+token.json
+
+# NSSM Executable (download separately)
+scripts/nssm.exe
+
+# Test Coverage
+/tests/coverage/
+
+# PHP
+/.phpunit.cache

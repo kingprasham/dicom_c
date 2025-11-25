@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(\"C:\\xampp\\mysql\\bin\\mysql.exe\" -u root dicom_viewer_v2_production -e \"UPDATE gdrive_backup_config SET backup_schedule = ''hourly'' WHERE id = 1;\")",
+      "Bash(\"C:\\xampp\\mysql\\bin\\mysql.exe\" -u root dicom_viewer_v2_production -e \"SELECT id, backup_enabled, backup_schedule, backup_time FROM gdrive_backup_config WHERE id = 1;\")",
+      "Bash(\"C:\\xampp\\mysql\\bin\\mysql.exe\" -u root dicom_viewer_v2_production -e \"DESCRIBE gdrive_backup_config;\")",
+      "Bash(\"C:\\xampp\\mysql\\bin\\mysql.exe\" -u root dicom_viewer_v2_production -e \"UPDATE gdrive_backup_config SET backup_schedule = ''daily'' WHERE id = 1; SELECT backup_schedule FROM gdrive_backup_config WHERE id = 1;\")",
+      "Bash(\"C:\\xampp\\mysql\\bin\\mysql.exe\" -u root dicom_viewer_v2_production -e \"ALTER TABLE gdrive_backup_config MODIFY COLUMN backup_schedule ENUM(''hourly'',''daily'',''weekly'',''monthly'') DEFAULT ''daily'';\")",
+      "Bash(\"C:\\xampp\\mysql\\bin\\mysql.exe\":*)",
+      "Bash(if [ -f \"c:/xampp/htdocs/papa/dicom_again/claude/FIXES_APPLIED.md\" ])",
+      "Bash(then echo \"exists\")",
+      "Bash(else echo \"not exists\")",
+      "Bash(fi)",
+      "Bash(\"C:\\xampp\\mysql\\bin\\mysql.exe\" -u root dicom_viewer_v2_production -e \"SHOW TABLES LIKE ''backup_history'';\")",
+      "Bash(\"C:\\xampp\\mysql\\bin\\mysql.exe\" -u root dicom_viewer_v2_production -e \"SELECT id, account_name, is_active, last_backup_status FROM backup_accounts;\")",
+      "Bash(net stop Apache2.4)",
+      "Bash(net start Apache2.4)",
+      "Bash(net stop:*)",
+      "Bash(sc query:*)",
+      "Bash(mysql:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

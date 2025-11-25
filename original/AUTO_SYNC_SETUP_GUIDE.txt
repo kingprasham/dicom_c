@@ -1,0 +1,436 @@
+================================================================================
+ AUTO-SYNC SETUP GUIDE - Automatic Database Sync
+================================================================================
+
+PROBLEM:
+--------
+Your app sends DICOM to localhost Orthanc ✓
+Orthanc receives the data ✓
+But you have to manually run sync_orthanc.php to update database ✗
+
+SOLUTION:
+---------
+Automatically sync Orthanc to database every 1 minute!
+
+================================================================================
+ SOLUTION OPTIONS (Choose One)
+================================================================================
+
+OPTION 1: WINDOWS TASK SCHEDULER (Recommended - Most Reliable)
+---------------------------------------------------------------
+Uses Windows built-in Task Scheduler to run sync every 1 minute.
+
+✓ PROS:
+  - Most reliable
+  - Runs as system service
+  - Survives user logout
+  - Easy to manage in Task Scheduler
+  - Automatically starts on boot
+
+✗ CONS:
+  - Requires Administrator rights to setup
+  - One-time setup needed
+
+HOW TO USE:
+  1. Right-click: SETUP_TASK_SCHEDULER.bat
+  2. Select "Run as Administrator"
+  3. Click "Yes" on UAC prompt
+  4. Done! Syncs every 1 minute automatically
+
+TO VERIFY:
+  - Open Task Scheduler (Windows Key + R → taskschd.msc)
+  - Look for "DicomAutoSync" task
+  - Should show "Running" or "Ready"
+
+TO DISABLE:
+  - Task Scheduler → Right-click "DicomAutoSync" → Disable
+  - Or delete the task
+
+---
+
+OPTION 2: STARTUP SCRIPT (Recommended - Easiest)
+-------------------------------------------------
+Runs sync script on Windows startup, continues in background.
+
+✓ PROS:
+  - Very easy to setup (no admin required)
+  - Starts automatically on boot
+  - Runs hidden in background
+
+✗ CONS:
+  - Stops if user logs out
+  - Uses more resources (continuous loop)
+
+HOW TO USE:
+  1. Double-click: SETUP_AUTO_SYNC_STARTUP.bat
+  2. Verify success message
+  3. Restart Windows (or run AUTO_SYNC_LOCAL_HIDDEN.vbs now)
+
+TO START NOW (without reboot):
+  - Double-click: AUTO_SYNC_LOCAL_HIDDEN.vbs
+
+TO STOP:
+  - Task Manager → Details → Find wscript.exe → End Task
+
+TO REMOVE FROM STARTUP:
+  - Delete: %APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\DicomAutoSync.vbs
+
+---
+
+OPTION 3: MANUAL BACKGROUND SCRIPT (For Testing)
+-------------------------------------------------
+Run sync script manually when needed.
+
+✓ PROS:
+  - Simple, no installation
+  - Can start/stop anytime
+  - See sync activity in window
+
+✗ CONS:
+  - Must start manually each time
+  - Window visible (or use hidden version)
+  - Stops when window closes
+
+HOW TO USE:
+
+  Visible window (for monitoring):
+    Double-click: AUTO_SYNC_LOCAL.bat
+    Watch sync happen every 1 minute
+    Press Ctrl+C to stop
+
+  Hidden background:
+    Double-click: AUTO_SYNC_LOCAL_HIDDEN.vbs
+    Runs invisibly
+    Stop via Task Manager
+
+================================================================================
+ RECOMMENDED SETUP (Best Practice)
+================================================================================
+
+RECOMMENDED: Use OPTION 1 (Task Scheduler)
+
+WHY?
+  ✓ Most reliable
+  ✓ Survives user logout/restart
+  ✓ Professional solution
+  ✓ Easy to manage
+  ✓ Low resource usage
+
+SETUP STEPS:
+  1. Right-click: SETUP_TASK_SCHEDULER.bat
+  2. "Run as Administrator"
+  3. Verify success message
+  4. Done!
+
+Your data will now sync automatically every 1 minute!
+
+================================================================================
+ COMPARISON TABLE
+================================================================================
+
+┌────────────────────────────────────────────────────────────────────────┐
+│ Feature           │ Task Scheduler │ Startup Script │ Manual Script  │
+├───────────────────┼────────────────┼────────────────┼────────────────┤
+│ Reliability       │ HIGH ✓         │ Medium         │ Low            │
+│ Setup Difficulty  │ Easy (admin)   │ Very Easy ✓    │ Very Easy ✓    │
+│ Auto-start        │ YES ✓          │ YES ✓          │ NO             │
+│ Survives logout   │ YES ✓          │ NO             │ NO             │
+│ Resource usage    │ LOW ✓          │ Medium         │ Medium         │
+│ Visibility        │ Hidden ✓       │ Hidden ✓       │ Visible/Hidden │
+│ Easy to disable   │ YES ✓          │ YES ✓          │ YES ✓          │
+└────────────────────────────────────────────────────────────────────────┘
+
+================================================================================
+ DETAILED INSTRUCTIONS
+================================================================================
+
+METHOD 1: TASK SCHEDULER SETUP
+-------------------------------
+
+STEP 1: Run Setup Script
+  Right-click: SETUP_TASK_SCHEDULER.bat
+  → Select "Run as Administrator"
+  → Click "Yes" on UAC prompt
+
+STEP 2: Verify Success
+  You should see:
+    "SUCCESS! Scheduled task created"
+    "Task Details: Name: DicomAutoSync"
+    "Frequency: Every 1 minute"
+
+STEP 3: Verify Task Created
+  Windows Key + R → type: taskschd.msc → Enter
+  → Task Scheduler Library
+  → Look for "DicomAutoSync"
+  → Status should be "Ready"
+
+STEP 4: Test Immediately
+  In Task Scheduler:
+  → Right-click "DicomAutoSync"
+  → Click "Run"
+  → Check: http://localhost/papa/dicom_again/pages/patients.html
+  → Data should appear
+
+DONE! Task will now run every 1 minute automatically.
+
+---
+
+METHOD 2: STARTUP SCRIPT SETUP
+-------------------------------
+
+STEP 1: Run Setup Script
+  Double-click: SETUP_AUTO_SYNC_STARTUP.bat
+
+STEP 2: Verify Success
+  You should see:
+    "SUCCESS! Auto-sync will start on Windows boot"
+    "File created: [Path]\DicomAutoSync.vbs"
+
+STEP 3: Start Now (without reboot)
+  Double-click: AUTO_SYNC_LOCAL_HIDDEN.vbs
+
+STEP 4: Verify Running
+  Task Manager → Details tab
+  → Look for "wscript.exe" process
+  → Should be running
+
+STEP 5: Test
+  Send DICOM from your app
+  → Wait 1-2 minutes
+  → Check: http://localhost/papa/dicom_again/pages/patients.html
+  → Patient should appear automatically
+
+DONE! Script will run on every Windows boot.
+
+---
+
+METHOD 3: MANUAL SCRIPT
+-----------------------
+
+FOR MONITORING (Visible):
+  Double-click: AUTO_SYNC_LOCAL.bat
+  → Window shows sync every minute
+  → Press Ctrl+C to stop
+
+FOR BACKGROUND (Hidden):
+  Double-click: AUTO_SYNC_LOCAL_HIDDEN.vbs
+  → Runs invisibly
+  → Check Task Manager to verify running
+  → End wscript.exe process to stop
+
+================================================================================
+ SYNC FREQUENCY
+================================================================================
+
+Default: Every 1 minute
+
+WHY 1 MINUTE?
+  - Fast enough for most use cases
+  - Low resource usage
+  - Data appears quickly after sending
+
+CHANGE FREQUENCY:
+
+If using Task Scheduler:
+  1. Open Task Scheduler (taskschd.msc)
+  2. Right-click "DicomAutoSync" → Properties
+  3. Triggers tab → Edit
+  4. Change "Repeat task every: 1 minute"
+  5. Options:
+     - 30 seconds (fastest, more resource usage)
+     - 2 minutes (balanced)
+     - 5 minutes (slower, less resource usage)
+  6. OK → OK
+
+If using Batch Script:
+  1. Edit AUTO_SYNC_LOCAL.bat
+  2. Find line: timeout /t 60 /nobreak
+  3. Change 60 to:
+     - 30 (30 seconds)
+     - 120 (2 minutes)
+     - 300 (5 minutes)
+  4. Save file
+  5. Restart script
+
+================================================================================
+ TROUBLESHOOTING
+================================================================================
+
+PROBLEM: Task Scheduler shows "Could not start"
+------------------------------------------------
+CAUSE: curl command not found or Apache not running
+
+FIX:
+  1. Verify Apache running in XAMPP Control Panel
+  2. Test manually: http://localhost/papa/dicom_again/sync_orthanc.php
+  3. If works manually but not in Task Scheduler:
+     - Edit task in Task Scheduler
+     - Actions → Edit action
+     - Program: C:\Windows\System32\curl.exe
+     - Arguments: -s http://localhost/papa/dicom_again/sync_orthanc.php
+     - Start in: C:\Windows\System32
+     - OK
+
+---
+
+PROBLEM: Script runs but data doesn't appear
+---------------------------------------------
+CAUSE: Sync not actually running or failing
+
+FIX:
+  1. Test sync manually: http://localhost/papa/dicom_again/sync_orthanc.php
+  2. Should show "SYNC SUCCESSFUL"
+  3. If shows errors:
+     - Check Apache running
+     - Check MySQL running
+     - Check Orthanc running
+     - Verify all services in XAMPP
+
+---
+
+PROBLEM: Can't find wscript.exe in Task Manager
+------------------------------------------------
+CAUSE: Hidden script not running
+
+FIX:
+  1. Double-click AUTO_SYNC_LOCAL_HIDDEN.vbs again
+  2. Check Task Manager → Details → wscript.exe
+  3. If still not there:
+     - Run visible version: AUTO_SYNC_LOCAL.bat
+     - Check for errors in window
+
+---
+
+PROBLEM: High CPU usage
+------------------------
+CAUSE: Sync running too frequently
+
+FIX:
+  1. Increase sync interval (see SYNC FREQUENCY above)
+  2. Change from 1 minute to 2-5 minutes
+  3. Or use Task Scheduler instead of continuous loop
+
+---
+
+PROBLEM: Stops working after Windows update
+--------------------------------------------
+CAUSE: Task/startup script disabled
+
+FIX:
+  1. Re-run setup:
+     - For Task Scheduler: SETUP_TASK_SCHEDULER.bat (as admin)
+     - For Startup: SETUP_AUTO_SYNC_STARTUP.bat
+  2. Verify task/script exists
+  3. Restart if needed
+
+================================================================================
+ VERIFICATION CHECKLIST
+================================================================================
+
+After setup, verify auto-sync is working:
+
+□ Setup completed successfully (no errors)
+□ Task visible in Task Scheduler OR wscript.exe running
+□ Send test DICOM from app
+□ Wait 1-2 minutes
+□ Refresh: http://localhost/papa/dicom_again/pages/patients.html
+□ New patient appears automatically
+
+If all checks pass: ✓ Auto-sync working!
+
+================================================================================
+ MAINTENANCE
+================================================================================
+
+DAILY:
+  - No action needed
+  - Auto-sync runs automatically
+
+WEEKLY:
+  - Verify auto-sync still running
+  - Check Task Manager or Task Scheduler
+
+MONTHLY:
+  - Review sync performance
+  - Check for any errors in logs
+
+AFTER PC RESTART:
+  - Task Scheduler: Starts automatically ✓
+  - Startup Script: Starts automatically ✓
+  - Manual Script: Must start manually
+
+IF PROBLEMS:
+  - Re-run setup script
+  - Check XAMPP services running
+  - Test manual sync first
+
+================================================================================
+ FILES SUMMARY
+================================================================================
+
+AUTO_SYNC_LOCAL.bat
+  → Visible window, syncs every 1 minute
+  → For monitoring/testing
+
+AUTO_SYNC_LOCAL_HIDDEN.vbs
+  → Hidden background, syncs every 1 minute
+  → For daily use
+
+SETUP_AUTO_SYNC_STARTUP.bat
+  → Adds auto-sync to Windows startup
+  → Easy setup, no admin required
+
+SETUP_TASK_SCHEDULER.bat
+  → Creates scheduled task
+  → Recommended, requires admin
+
+AUTO_SYNC_SETUP_GUIDE.txt (this file)
+  → Complete instructions
+  → All options explained
+
+================================================================================
+ QUICK START
+================================================================================
+
+FASTEST SETUP (3 steps):
+
+1. Right-click: SETUP_TASK_SCHEDULER.bat
+2. Select "Run as Administrator"
+3. Done!
+
+Your database will now sync automatically every minute!
+
+Send DICOM from app → Wait 1 minute → Data appears in web interface!
+
+================================================================================
+ SUPPORT
+================================================================================
+
+If auto-sync not working:
+
+1. Test manual sync first:
+   http://localhost/papa/dicom_again/sync_orthanc.php
+
+2. If manual works but auto doesn't:
+   - Check Task Scheduler task status
+   - OR check wscript.exe running in Task Manager
+
+3. If manual fails:
+   - Check Apache running (XAMPP Control Panel)
+   - Check MySQL running (XAMPP Control Panel)
+   - Check Orthanc running (http://localhost:8042)
+
+4. Re-run setup if needed
+
+================================================================================
+ SUCCESS!
+================================================================================
+
+With auto-sync configured:
+
+  App sends DICOM → Localhost Orthanc receives → Auto-sync runs every minute
+  → Database updated → Web interface shows patients automatically!
+
+No manual intervention needed! ✓
+
+================================================================================

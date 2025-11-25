@@ -1,0 +1,81 @@
+================================================================================
+    HOSPITAL DICOM SYSTEM - QUICK START GUIDE
+================================================================================
+
+PREREQUISITES (Install these FIRST):
+------------------------------------
+1. Python 3.11        → https://www.python.org/downloads/
+2. XAMPP              → https://www.apachefriends.org/download.html
+3. Orthanc Server     → https://orthanc.uclouvain.be/downloads/windows-64/
+4. ngrok              → https://ngrok.com/download
+   - Extract to: C:\ngrok\
+   - Setup authtoken: ngrok config add-authtoken YOUR_TOKEN
+   - Claim static domain at: https://dashboard.ngrok.com/cloud-edge/domains
+
+INSTALLATION (3 simple steps):
+-------------------------------
+1. Right-click → Run as administrator: HOSPITAL_COMPLETE_INSTALLER_ENHANCED.bat
+2. Run: COPY_WORKING_FILES_TO_HOSPITAL.bat
+3. Edit these files with your ngrok domain:
+   - C:\xampp\htdocs\dicom_hospital\config.php (line 35)
+   - C:\xampp\htdocs\dicom_hospital\start_ngrok_hidden.vbs
+
+AUTO-START:
+-----------
+Run once: C:\xampp\htdocs\dicom_hospital\SETUP_AUTO_START.bat
+
+FIRST TIME USE:
+---------------
+1. Run: C:\HospitalDICOM\START_ALL.bat
+2. Open: http://localhost/dicom_hospital/pages/login.html
+3. Login: admin / admin123
+4. Open Orthanc: http://localhost:8042 (orthanc / orthanc)
+
+CONFIGURE MRI/CT MACHINE:
+--------------------------
+Settings on imaging device:
+  - AE Title: HOSPITAL_PACS
+  - IP: [This PC's IP - get from: ipconfig]
+  - Port: 4242
+
+Windows Firewall:
+  - Allow port 4242 (DICOM)
+
+TEST:
+-----
+1. Send test study from MRI/CT
+2. Check Orthanc: http://localhost:8042
+3. Run sync: http://localhost/dicom_hospital/sync_orthanc.php
+4. View in browser: http://localhost/dicom_hospital/pages/patients.html
+
+DAILY COMMANDS:
+---------------
+Start:  C:\HospitalDICOM\START_ALL.bat
+Stop:   C:\HospitalDICOM\STOP_ALL.bat
+Status: C:\HospitalDICOM\CHECK_STATUS.bat
+
+REMOTE ACCESS:
+--------------
+Share URL: https://YOUR-NGROK-DOMAIN.ngrok-free.dev/dicom/pages/login.html
+
+TROUBLESHOOTING:
+----------------
+Problem: No patients showing
+Fix: Run http://localhost/dicom_hospital/sync_orthanc.php
+
+Problem: Can't login
+Fix: Check Apache running in XAMPP Control Panel
+
+Problem: Not receiving DICOM
+Fix:
+  - Check firewall allows port 4242
+  - Verify AE Title exactly: HOSPITAL_PACS
+  - Check PC and modality on same network
+  - Verify Orthanc running: http://localhost:8042
+
+SUPPORT:
+--------
+Full documentation: HOSPITAL_INSTALLATION_README.txt
+Setup guide: C:\HospitalDICOM\SETUP_GUIDE.txt
+
+================================================================================

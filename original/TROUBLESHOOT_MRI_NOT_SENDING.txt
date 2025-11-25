@@ -1,0 +1,478 @@
+================================================================================
+ TROUBLESHOOTING: MRI NOT SENDING TO LOCALHOST
+================================================================================
+
+PROBLEM:
+--------
+MRI sends data to PRODUCTION ✓
+MRI does NOT send data to LOCALHOST ✗
+
+DIAGNOSIS:
+----------
+Localhost Orthanc is running and ready, but NOT receiving data from MRI.
+This means one of the following:
+
+1. Localhost destination NOT configured on MRI
+2. Localhost destination configured but NOT ENABLED
+3. Network connectivity issue (firewall, routing, etc.)
+4. MRI only configured to send to ONE destination at a time
+5. Wrong IP address or port configured
+6. Wrong AE Title configured
+
+================================================================================
+ DIAGNOSTIC CHECKLIST
+================================================================================
+
+CHECK 1: Verify MRI Dual Destination Configuration
+---------------------------------------------------
+On the MRI console, check DICOM settings:
+
+□ Does LOCALHOST_PACS destination exist in the list?
+□ Is it ENABLED/ACTIVE?
+□ Correct IP: 192.168.0.102
+□ Correct Port: 4242
+□ Correct AE Title: HOSPITAL_PACS
+
+COMMON ISSUE:
+  You may have ADDED the localhost destination, but forgot to ENABLE it!
+
+WHERE TO CHECK (by manufacturer):
+
+  SIEMENS:
+    Service → Network → DICOM Storage → Destinations List
+    → Look for LOCALHOST_PACS → Status should be "Active"
+
+  GE:
+    Configuration → Network → Store SCP → Destinations
+    → LOCALHOST_PACS → Status: Enabled
+
+  PHILIPS:
+    Setup → Network → Remote Systems
+    → LOCALHOST_PACS → Enabled: Yes
+
+ACTION:
+  ✓ Verify localhost destination EXISTS
+  ✓ Verify localhost destination is ENABLED/ACTIVE
+  ✓ Verify IP/Port/AE Title are correct
+
+---
+
+CHECK 2: Verify Auto-Send to BOTH Destinations
+-----------------------------------------------
+Some MRI systems require explicit selection of which destinations to send to.
+
+□ Auto-send configured?
+□ BOTH destinations selected for auto-send?
+
+COMMON ISSUE:
+  Auto-send may only be configured for production destination.
+  You need to add localhost to the auto-send list.
+
+WHERE TO CHECK:
+
+  SIEMENS:
+    Acquisition → Auto-Store → Destinations
+    → Should show BOTH: HOSPITAL_PACS + LOCALHOST_PACS
+
+  GE:
+    Scan Setup → Auto-Send Destinations
+    → Check both destinations
+
+  PHILIPS:
+    Auto-Archive Settings
+    → Enable both remote systems
+
+ACTION:
+  ✓ Enable auto-send to BOTH destinations
+  ✓ OR manually select both when sending
+
+---
+
+CHECK 3: Test Network Connectivity
+-----------------------------------
+From the MRI computer/console:
+
+TEST 3A: Can MRI Reach Your PC?
+  Open command prompt on MRI console
+  Type: ping 192.168.0.102
+
+  Expected: Reply from 192.168.0.102: bytes=32 time<10ms
+
+  If "Request timed out":
+    - Your PC is on different network/VLAN
+    - Firewall blocking ICMP ping
+    - Wrong IP address
+
+TEST 3B: Can MRI Reach DICOM Port?
+  On MRI console, if telnet available:
+  Type: telnet 192.168.0.102 4242
+
+  Expected: Connection established (blank screen)
+
+  If "Could not connect":
+    - Firewall blocking port 4242
+    - Orthanc not listening on 0.0.0.0
+    - Network routing issue
+
+ACTION:
+  ✓ Ping test from MRI console
+  ✓ Telnet/port test from MRI console
+  ✓ Contact IT if network segmentation blocking
+
+---
+
+CHECK 4: Review MRI DICOM Send Logs
+------------------------------------
+Most MRI systems log DICOM send attempts.
+
+WHERE TO FIND LOGS:
+
+  SIEMENS:
+    Service → Logs → DICOM Communication Log
+    Look for: Failed connections to 192.168.0.102
+
+  GE:
+    Service → Logs → Network Log
+    Look for: Error sending to LOCALHOST_PACS
+
+  PHILIPS:
+    System Logs → DICOM Transfer Log
+
+WHAT TO LOOK FOR:
+  - "Connection refused" = Orthanc not running or firewall blocking
+  - "Unknown AE Title" = AE Title mismatch
+  - "Timeout" = Network connectivity issue
+  - "Association rejected" = Configuration mismatch
+
+ACTION:
+  ✓ Check MRI logs for errors
+  ✓ Note exact error message
+  ✓ Search error online for solution
+
+---
+
+CHECK 5: Verify Your PC Firewall
+---------------------------------
+Even though the readiness check passed, verify manually:
+
+TEST 5A: Windows Firewall Rule
+  1. Windows Key + R → firewall.cpl
+  2. Advanced Settings → Inbound Rules
+  3. Find: "DICOM C-STORE (Port 4242)"
+  4. Right-click → Properties
+  5. Verify:
+     - Enabled: Yes
+     - Action: Allow
+     - Profiles: ALL checked (Domain, Private, Public)
+
+TEST 5B: Antivirus/Third-Party Firewall
+  Do you have:
+  - Norton, McAfee, Kaspersky, etc.?
+  - Corporate security software?
+
+  These may ALSO block port 4242 even if Windows Firewall allows it.
+
+  Test: Temporarily disable antivirus and retry MRI send.
+
+ACTION:
+  ✓ Verify Windows Firewall rule active
+  ✓ Check for third-party firewall/antivirus
+  ✓ Temporarily disable and test
+
+---
+
+CHECK 6: Verify Orthanc Configuration
+--------------------------------------
+Check Orthanc is configured to accept connections from any IP:
+
+FILE: C:\Program Files\Orthanc Server\Configuration\orthanc.json
+
+VERIFY THESE SETTINGS:
+  {
+    "DicomPort" : 4242,
+    "DicomAet" : "HOSPITAL_PACS",
+    "DicomCheckCalledAet" : false,
+    "DicomCheckModalityHost" : false,
+    "UnknownSopClassAccepted" : true,
+    "DicomModalities" : {},
+    "DicomModalitiesInDatabase" : {
+      "ANY-SCP" : true
+    }
+  }
+
+CRITICAL SETTINGS:
+  - DicomCheckCalledAet: false (accepts any AE Title)
+  - DicomCheckModalityHost: false (accepts from any IP)
+  - UnknownSopClassAccepted: true (accepts all DICOM types)
+
+If these are "true" or missing, Orthanc may reject MRI connections.
+
+ACTION:
+  ✓ Open Configuration\orthanc.json
+  ✓ Verify settings above
+  ✓ If changed, restart Orthanc service
+
+---
+
+CHECK 7: Test with DICOM Tool (Advanced)
+-----------------------------------------
+Use a DICOM testing tool to simulate MRI sending.
+
+RECOMMENDED TOOL: DCMTK (free)
+  Download: https://dicom.offis.de/dcmtk.php.en
+
+TEST PROCEDURE:
+  1. Install DCMTK on another PC (or your localhost)
+  2. Get a test DICOM file
+  3. Run: storescu -aec HOSPITAL_PACS 192.168.0.102 4242 test.dcm
+
+  Expected: "Association accepted" + successful transfer
+
+  If successful: Localhost Orthanc works, MRI config is the problem
+  If fails: Localhost Orthanc/network has an issue
+
+ACTION:
+  ✓ Download DCMTK
+  ✓ Test with storescu
+  ✓ Verify localhost can receive DICOM
+
+================================================================================
+ MOST LIKELY CAUSES (Ranked)
+================================================================================
+
+1. LOCALHOST DESTINATION NOT ENABLED ON MRI (90% probability)
+   → Check MRI DICOM settings
+   → Verify destination shows "Active" or "Enabled"
+   → Enable if disabled
+
+2. ONLY ONE DESTINATION ALLOWED AT A TIME (5% probability)
+   → Some older MRI systems limitation
+   → May need to manually select destination per study
+   → Check MRI manual for multi-destination support
+
+3. NETWORK SEGMENTATION (3% probability)
+   → MRI on different VLAN than your PC
+   → Hospital IT may have separated networks
+   → Contact IT to allow routing
+
+4. WRONG CONFIGURATION (1% probability)
+   → Wrong IP address entered
+   → Wrong AE Title
+   → Wrong port
+
+5. ORTHANC NOT ACCEPTING CONNECTIONS (1% probability)
+   → DicomCheckCalledAet = true
+   → DicomCheckModalityHost = true
+   → Needs configuration change
+
+================================================================================
+ STEP-BY-STEP TROUBLESHOOTING PROCEDURE
+================================================================================
+
+STEP 1: Verify MRI Configuration
+---------------------------------
+Go to MRI console → DICOM settings → Destinations
+
+VERIFY:
+  □ PRODUCTION destination: ENABLED ✓
+  □ LOCALHOST_PACS destination: EXISTS
+  □ LOCALHOST_PACS destination: ENABLED ← MOST IMPORTANT!
+  □ IP: 192.168.0.102
+  □ Port: 4242
+  □ AE Title: HOSPITAL_PACS
+
+STEP 2: Send Test Study
+------------------------
+On MRI console:
+  1. Select completed study
+  2. MANUALLY select send destinations
+  3. Check BOTH:
+     ☑ HOSPITAL_PACS (Production)
+     ☑ LOCALHOST_PACS (Your PC)
+  4. Send
+  5. Watch status on MRI console
+
+EXPECTED:
+  Both should show "Transfer Complete" or "Success"
+
+IF PRODUCTION SUCCEEDS, LOCALHOST FAILS:
+  → Note error message
+  → Proceed to STEP 3
+
+STEP 3: Check MRI Error Log
+----------------------------
+Review DICOM communication log on MRI console.
+
+LOOK FOR:
+  - Exact error message for LOCALHOST_PACS
+  - Time of failure
+  - Error code
+
+COMMON ERRORS & SOLUTIONS:
+
+  "Connection refused":
+    → Firewall blocking
+    → Orthanc not running
+    → Run: VERIFY_DUAL_DESTINATION_READY.bat
+
+  "Association rejected":
+    → AE Title mismatch
+    → Verify AE Title is HOSPITAL_PACS on both sides
+
+  "Timeout":
+    → Network connectivity
+    → Wrong IP address
+    → Test: ping 192.168.0.102 from MRI console
+
+  "Unknown destination":
+    → Destination not properly saved
+    → Re-add destination on MRI
+
+STEP 4: Test from MRI Console
+------------------------------
+If MRI console has command line access:
+
+  ping 192.168.0.102
+  → Should reply
+
+  telnet 192.168.0.102 4242
+  → Should connect
+
+If either fails:
+  → Network/firewall issue
+  → Contact hospital IT
+
+STEP 5: Verify on Localhost
+----------------------------
+After MRI sends, immediately check:
+
+  http://localhost:8042
+  → Refresh
+  → Look for new patient
+
+If appears:
+  ✓ SUCCESS! Dual destination working!
+
+If NOT appears:
+  → MRI did not send (check MRI config)
+  → OR Orthanc rejected (check Orthanc logs)
+
+STEP 6: Check Orthanc Logs
+---------------------------
+If Orthanc has logs enabled:
+
+  C:\Program Files\Orthanc Server\Logs\
+
+Look for:
+  - Connection attempts from MRI IP
+  - Rejected associations
+  - Error messages
+
+STEP 7: Last Resort - Packet Capture
+-------------------------------------
+If nothing else works, capture network traffic:
+
+  1. Download Wireshark
+  2. Start capture on port 4242
+  3. Send from MRI
+  4. Stop capture
+  5. Look for:
+     - Any packets from MRI IP to your PC?
+     - TCP SYN packets?
+     - Connection established?
+
+If NO PACKETS seen:
+  → MRI not sending to localhost
+  → Check MRI config again
+
+If PACKETS seen but connection fails:
+  → Firewall or Orthanc rejecting
+  → Check Orthanc config
+
+================================================================================
+ QUICK DIAGNOSTIC COMMANDS
+================================================================================
+
+Check if Orthanc received new data:
+  curl -u orthanc:orthanc http://localhost:8042/patients
+
+Check Orthanc system info:
+  curl -u orthanc:orthanc http://localhost:8042/system
+
+Check port listening:
+  netstat -ano | findstr :4242
+
+Check firewall rule:
+  netsh advfirewall firewall show rule name="DICOM C-STORE (Port 4242)"
+
+Test DICOM connectivity (with DCMTK):
+  echoscu -aec HOSPITAL_PACS 192.168.0.102 4242
+
+View Orthanc configuration:
+  type "C:\Program Files\Orthanc Server\Configuration\orthanc.json"
+
+================================================================================
+ CONTACT INFORMATION
+================================================================================
+
+If you need help from hospital IT, provide:
+
+INFORMATION TO SHARE:
+  - Your PC IP: 192.168.0.102
+  - DICOM Port: 4242
+  - AE Title: HOSPITAL_PACS
+  - MRI model and manufacturer
+  - Exact error message from MRI console
+  - Result of ping test from MRI
+
+QUESTIONS TO ASK IT:
+  1. Is there network segmentation between MRI room and my PC?
+  2. Are there any firewall rules blocking port 4242?
+  3. Can the MRI network reach 192.168.0.102?
+  4. Do I need any special permissions or VLAN changes?
+
+================================================================================
+ TEMPORARY WORKAROUND
+================================================================================
+
+If you cannot get dual destination working immediately:
+
+USE SYNC SOLUTION (already created):
+  1. Let MRI send to production (as it currently does)
+  2. Run: http://localhost/papa/dicom_again/sync_from_production.php
+  3. This pulls data from production to localhost
+  4. 2-4 minute delay, but works without MRI changes
+
+AUTO-SYNC OPTION:
+  Double-click: AUTO_SYNC_HIDDEN.vbs
+  → Syncs every 2 minutes automatically
+
+This is not ideal, but works while troubleshooting dual destination.
+
+================================================================================
+ SUMMARY
+================================================================================
+
+MOST LIKELY ISSUE:
+  Localhost destination configured on MRI but NOT ENABLED
+
+WHAT TO DO:
+  1. Go to MRI DICOM settings
+  2. Find LOCALHOST_PACS destination
+  3. Enable/Activate it
+  4. Ensure auto-send includes BOTH destinations
+  5. Send test study
+  6. Verify appears on http://localhost:8042
+
+IF STILL NOT WORKING:
+  1. Check MRI error logs (exact error message)
+  2. Test network connectivity (ping from MRI console)
+  3. Review Orthanc configuration (DicomCheckCalledAet: false)
+  4. Contact hospital IT if network issue
+  5. Use sync workaround temporarily
+
+NEED MORE HELP?
+  Read: DUAL_DESTINATION_SETUP.txt (complete guide)
+  Run: VERIFY_DUAL_DESTINATION_READY.bat (check localhost)
+
+================================================================================

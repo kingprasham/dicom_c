@@ -1,0 +1,150 @@
+        // *** CHECK IF THIS IS AN ORTHANC IMAGE ***
+        if (currentImage && currentImage.isOrthancImage && currentImage.orthancInstanceId) {
+            console.log('Loading Orthanc image with instance ID:', currentImage.orthancInstanceId);
+            
+            // Remove loading indicator immediately
+            if (loadingDiv && loadingDiv.parentNode) {
+                loadingDiv.parentNode.removeChild(loadingDiv);
+                loadingDiv = null;
+            }
+
+            // Create image ID for Orthanc instance using absolute URL
+            const baseUrl = `${window.location.protocol}//${window.location.host}${window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1)}`;
+            const imageId = `wadouri:${baseUrl}api/get_dicom_from_orthanc.php?instanceId=${currentImage.orthancInstanceId}`;
+
+            console.log('Base URL:', baseUrl);
+            console.log('Loading image with ID:', imageId);
+            console.log('Instance ID:', currentImage.orthancInstanceId);
+
+            let image;
+            try {
+                // Load and display image
+                image = await cornerstone.loadImage(imageId);
+                console.log('Image loaded successfully:', image.width, 'x', image.height);
+                cornerstone.displayImage(targetViewport, image);
+            } catch (error) {
+                console.error('ERROR loading Orthanc image:', error);
+                console.error('Image ID was:', imageId);
+                console.error('Instance ID was:', currentImage.orthancInstanceId);
+                throw new Error(`Failed to load DICOM image: ${error.message}`);
+            }
+
+            // Update UI only during non-cine operations
+            if (!state.isPlaying) {
+                window.DICOM_VIEWER.updateViewportInfo();
+                // Create patient info from Orthanc data
+                const orthancPatientInfo = {
+                    patient_name: currentImage.patient_name || 'Unknown',
+                    study_description: currentImage.study_description || 'PACS Study',
+                    series_description: currentImage.series_description || 'PACS Series',
+                    modality: 'CT', // Default, could be extracted from DICOM
+                    columns: image.columns,
+                    rows: image.rows
+                };
+                window.DICOM_VIEWER.updatePatientInfo(orthancPatientInfo);
+            }
+
+            // Store original state for enhancements
+            if (window.DICOM_VIEWER.MANAGERS.enhancementManager) {
+                window.DICOM_VIEWER.MANAGERS.enhancementManager.storeOriginalState(targetViewport, image);
+            }
+
+            console.log('Orthanc image loaded and displayed successfully');
+
+            // Update series list selection
+            if (!state.isPlaying) {
+                const seriesItems = document.querySelectorAll('.series-item');
+                seriesItems.forEach((item, index) => {
+                    if (index === state.currentImageIndex) {
+                        item.classList.add('selected');
+                    } else {
+                        item.classList.remove('selected');
+                    }
+                });
+            }
+
+            return;
+        }
+        
+        // *** NEW: Check if this is a PACS-loaded image with embedded data ***
+        if (currentImage && currentImage.file_data) {
+            console.log('Loading PACS image with embedded data');
+            
+            // Remove loading indicator immediately
+            if (loadingDiv && loadingDiv.parentNode) {
+                loadingDiv.parentNode.removeChild(loadingDiv);
+                loadingDiv = null;
+            }
+
+            // Create image ID from base64 data (PACS format)
+            const imageId = 'wadouri:data:application/dicom;base64,' + currentImage.file_data;
+
+            // Load and display image
+            const image = await cornerstone.loadImage(imageId);
+            cornerstone.displayImage(targetViewport, image);
+
+            // Update UI only during non-cine operations
+            if (!state.isPlaying) {
+                window.DICOM_VIEWER.updateViewportInfo();
+                // Create fake patient info from PACS data
+                const pacsPatientInfo = {
+                    patient_name: currentImage.patient_name || 'Unknown',
+                    study_description: currentImage.study_description || 'PACS Study',
+                    series_description: currentImage.series_description || 'PACS Series'
+                };
+                window.DICOM_VIEWER.updatePatientInfo(pacsPatientInfo);
+            }
+
+            // Store original state for enhancements
+            if (window.DICOM_VIEWER.MANAGERS.enhancementManager) {
+                window.DICOM_VIEWER.MANAGERS.enhancementManager.storeOriginalState(targetViewport, image);
+            }
+
+            console.log('PACS image loaded and displayed successfully');
+
+            // Update series list selection
+            if (!state.isPlaying) {
+                const seriesItems = document.querySelectorAll('.series-item');
+                seriesItems.forEach((item, index) => {
+                    if (index === state.currentImageIndex) {
+                        item.classList.add('selected');
+                    } else {
+                        item.classList.remove('selected');
+                    }
+                });
+            }
+
+            return;
+        }
+
+        // *** EXISTING: Regular database image loading ***
+        const response = await fetch(`get_dicom_fast.php?id=${state.currentFileId}`);
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+
+        if (!data.success || !data.file_data) {
+            throw new Error('Invalid response: ' + (data.error || 'No file data received'));
+        }
+
+        // Remove loading indicator immediately on success
+        if (loadingDiv && loadingDiv.parentNode) {
+            loadingDiv.parentNode.removeChild(loadingDiv);
+            loadingDiv = null;
+        }
+
+        const imageId = 'wadouri:data:application/dicom;base64,' + data.file_data;
+
+        // Load and display image
+        const image = await cornerstone.loadImage(imageId);
+        cornerstone.displayImage(targetViewport, image);
+
+        // Update UI only during non-cine operations
+        if (!state.isPlaying) {
+            window.DICOM_VIEWER.updateViewportInfo();
+            window.DICOM_VIEWER.updatePatientInfo(data);
+        }
+
