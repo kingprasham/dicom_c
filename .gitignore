@@ -48,6 +48,7 @@ Thumbs.db
 # Database Dumps
 *.sql
 !setup/schema_v2_production.sql
+!database/migrations/*.sql
 
 # Windows
 desktop.ini

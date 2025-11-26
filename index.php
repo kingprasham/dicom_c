@@ -35,6 +35,7 @@ $userRole = $_SESSION['role'] ?? 'viewer';
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="<?= BASE_PATH ?>/css/styles.css">
+    <link rel="stylesheet" href="<?= BASE_PATH ?>/assets/css/ai-styles.css">
     <style>
         /* Mobile-First Responsive Enhancements */
         body {
@@ -682,6 +683,7 @@ $userRole = $_SESSION['role'] ?? 'viewer';
     <!-- Load main application -->
     <script src="<?= BASE_PATH ?>/js/main.js"></script>
     <script src="<?= BASE_PATH ?>/js/orthanc-autoload.js"></script>
+    <script src="<?= BASE_PATH ?>/assets/js/ai-integration.js?v=<?= time() ?>"></script>
 
     <script>
         // Fix sidebar visibility on load
