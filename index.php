@@ -30,13 +30,14 @@ $userRole = $_SESSION['role'] ?? 'viewer';
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="base-path" content="<?= BASE_PATH ?>">
     <meta name="base-url" content="<?= BASE_URL ?>">
-    <title>DICOM Viewer Pro</title>
+    <title>Accurate Viewer</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="<?= BASE_PATH ?>/css/styles.css">
     <link rel="stylesheet" href="<?= BASE_PATH ?>/assets/css/ai-styles.css">
     <link rel="stylesheet" href="<?= BASE_PATH ?>/assets/css/medical-report-styles.css">
+    <link rel="stylesheet" href="<?= BASE_PATH ?>/assets/css/drag-drop-styles.css">
     <style>
         /* Mobile-First Responsive Enhancements */
         body {
@@ -50,7 +51,7 @@ $userRole = $_SESSION['role'] ?? 'viewer';
                 display: none;
             }
             .navbar-brand::after {
-                content: "DICOM";
+                content: "Accurate";
                 font-size: 1.1rem;
                 font-weight: bold;
             }
@@ -273,6 +274,79 @@ $userRole = $_SESSION['role'] ?? 'viewer';
                 display: none;
             }
         }
+        
+        /* Sidebar collapse styles (#15) - Fixed */
+        .sidebar {
+            position: relative;
+            width: 250px;
+            min-width: 250px;
+            max-width: 250px;
+            transition: width 0.3s ease, min-width 0.3s ease, max-width 0.3s ease, opacity 0.3s ease;
+            flex-shrink: 0;
+            overflow-x: hidden;
+        }
+        .sidebar.sidebar-hidden {
+            width: 0 !important;
+            min-width: 0 !important;
+            max-width: 0 !important;
+            padding: 0 !important;
+            overflow: hidden;
+            border: none !important;
+            opacity: 0;
+        }
+        .sidebar.sidebar-hidden > * {
+            display: none !important;
+        }
+        
+        /* Float toggle buttons - positioned on sidebar borders */
+        .sidebar-toggle-float {
+            position: fixed;
+            z-index: 1100;
+            width: 20px;
+            height: 50px;
+            background: #1e2530;
+            border: 1px solid #3a4556;
+            color: #8892a0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+            font-size: 12px;
+        }
+        .sidebar-toggle-float:hover {
+            background: #0d6efd;
+            color: white;
+            border-color: #0d6efd;
+        }
+        .sidebar-toggle-float i {
+            transition: transform 0.3s ease;
+        }
+        #toggleLeftSidebar {
+            top: 50%;
+            transform: translateY(-50%);
+            border-radius: 0 6px 6px 0;
+            border-left: none;
+        }
+        #toggleRightSidebar {
+            top: 50%;
+            transform: translateY(-50%);
+            border-radius: 6px 0 0 6px;
+            border-right: none;
+        }
+        
+        /* Ensure main content fills space when sidebars hidden */
+        .main-layout {
+            display: flex;
+            transition: all 0.3s ease;
+        }
+        
+        /* Main content should expand when sidebars are hidden */
+        #main-content {
+            flex: 1;
+            min-width: 0;
+            transition: all 0.3s ease;
+        }
     </style>
 
     <!-- PDF Export Libraries -->
@@ -328,11 +402,25 @@ $userRole = $_SESSION['role'] ?? 'viewer';
         <div class="container-fluid">
             <a class="navbar-brand d-flex align-items-center" href="<?= BASE_PATH ?>/">
                 <i class="bi bi-heart-pulse-fill text-primary fs-4 me-2"></i>
-                <span class="fw-semibold">DICOM Viewer Pro - Enhanced MPR</span>
+                <span class="fw-semibold">Accurate Viewer</span>
             </a>
-            <div id="report-indicator" class="ms-3" style="display: none;">
-                <span class="badge bg-success d-flex align-items-center gap-1">
-                    <i class="bi bi-file-earmark-text-fill"></i> Report Attached
+            
+            <!-- Patient Info in Navbar -->
+            <div id="navbar-patient-info" class="d-flex align-items-center gap-2 ms-3" style="display: none !important;">
+                <span class="badge bg-dark border border-secondary d-flex align-items-center gap-1">
+                    <i class="bi bi-person-fill text-primary"></i>
+                    <span id="nav-patient-name">-</span>
+                </span>
+                <span class="badge bg-dark border border-secondary" id="nav-age-badge">
+                    <i class="bi bi-calendar3 text-info me-1"></i>
+                    <span id="nav-patient-age">-</span>
+                </span>
+                <span class="badge bg-dark border border-secondary" id="nav-sex-badge">
+                    <i class="bi bi-gender-ambiguous text-warning me-1" id="nav-sex-icon"></i>
+                    <span id="nav-patient-sex">-</span>
+                </span>
+                <span class="badge bg-dark border border-secondary">
+                    <small>ID:</small> <span id="nav-patient-id">-</span>
                 </span>
             </div>
             <div class="d-flex align-items-center gap-2 ms-auto">
@@ -537,7 +625,7 @@ $userRole = $_SESSION['role'] ?? 'viewer';
             </div>
         </main>
 
-        <aside class="sidebar bg-body-tertiary border-start">
+        <aside class="sidebar bg-body-tertiary border-start" id="rightSidebar">
             <div class="p-3 border-bottom">
                 <h6 class="text-light mb-2">Tools</h6>
                 <div class="row row-cols-3 g-1" id="tools-panel">
@@ -548,7 +636,7 @@ $userRole = $_SESSION['role'] ?? 'viewer';
                             class="btn btn-secondary w-100 tool-btn d-flex flex-column justify-content-center align-items-center"><i
                                 class="bi bi-zoom-in"></i><span class="small">Zoom</span></button></div>
                     <div class="col"><button data-tool="Wwwc"
-                            class="btn btn-primary w-100 tool-btn d-flex flex-column justify-content-center align-items-center"><i
+                            class="btn btn-secondary w-100 tool-btn d-flex flex-column justify-content-center align-items-center"><i
                                 class="bi bi-sliders"></i><span class="small">W/L</span></button></div>
                     <div class="col"><button data-tool="Length"
                             class="btn btn-secondary w-100 tool-btn d-flex flex-column justify-content-center align-items-center"><i
@@ -622,6 +710,14 @@ $userRole = $_SESSION['role'] ?? 'viewer';
             </div>
         </aside>
     </div>
+    
+    <!-- Sidebar Toggle Buttons (Fixed Position) -->
+    <button class="sidebar-toggle-float" id="toggleLeftSidebar" title="Toggle left sidebar (H)">
+        <i class="bi bi-chevron-left" id="leftSidebarIcon"></i>
+    </button>
+    <button class="sidebar-toggle-float" id="toggleRightSidebar" title="Toggle right sidebar">
+        <i class="bi bi-chevron-right" id="rightSidebarIcon"></i>
+    </button>
 
     <!-- Mobile Tools Bar -->
     <div class="mobile-tools-bar">
@@ -758,6 +854,114 @@ $userRole = $_SESSION['role'] ?? 'viewer';
 
         // Make checkReportExistence globally available so it can be called after report save
         window.checkReportExistence = checkReportExistence;
+        
+        // Sidebar toggle functionality (#15) - Fixed positioning
+        initializeSidebarToggles();
+        
+        function initializeSidebarToggles() {
+            const leftSidebar = document.getElementById('leftSidebar');
+            const rightSidebar = document.getElementById('rightSidebar');
+            const toggleLeft = document.getElementById('toggleLeftSidebar');
+            const toggleRight = document.getElementById('toggleRightSidebar');
+            const leftIcon = document.getElementById('leftSidebarIcon');
+            const rightIcon = document.getElementById('rightSidebarIcon');
+            
+            const SIDEBAR_WIDTH = 250; // Fixed sidebar width
+            
+            // Load saved preferences
+            const leftHidden = localStorage.getItem('leftSidebarHidden') === 'true';
+            const rightHidden = localStorage.getItem('rightSidebarHidden') === 'true';
+            
+            // Apply saved state
+            if (leftHidden && leftSidebar) {
+                leftSidebar.classList.add('sidebar-hidden');
+            }
+            if (rightHidden && rightSidebar) {
+                rightSidebar.classList.add('sidebar-hidden');
+            }
+            
+            // Initial button positioning
+            updateAllButtonPositions();
+            
+            function updateAllButtonPositions() {
+                const leftIsHidden = leftSidebar?.classList.contains('sidebar-hidden');
+                const rightIsHidden = rightSidebar?.classList.contains('sidebar-hidden');
+                
+                if (toggleLeft) {
+                    toggleLeft.style.left = leftIsHidden ? '0px' : SIDEBAR_WIDTH + 'px';
+                }
+                if (leftIcon) {
+                    leftIcon.style.transform = leftIsHidden ? 'rotate(180deg)' : 'rotate(0deg)';
+                }
+                if (toggleRight) {
+                    toggleRight.style.right = rightIsHidden ? '0px' : SIDEBAR_WIDTH + 'px';
+                }
+                if (rightIcon) {
+                    rightIcon.style.transform = rightIsHidden ? 'rotate(180deg)' : 'rotate(0deg)';
+                }
+            }
+            
+            function resizeViewports() {
+                setTimeout(() => {
+                    document.querySelectorAll('.viewport').forEach(vp => {
+                        try { cornerstone.resize(vp); } catch(e) {}
+                    });
+                }, 350);
+            }
+            
+            // Toggle left sidebar
+            if (toggleLeft && leftSidebar) {
+                toggleLeft.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    leftSidebar.classList.toggle('sidebar-hidden');
+                    const isHidden = leftSidebar.classList.contains('sidebar-hidden');
+                    localStorage.setItem('leftSidebarHidden', isHidden);
+                    updateAllButtonPositions();
+                    resizeViewports();
+                });
+            }
+            
+            // Toggle right sidebar
+            if (toggleRight && rightSidebar) {
+                toggleRight.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    rightSidebar.classList.toggle('sidebar-hidden');
+                    const isHidden = rightSidebar.classList.contains('sidebar-hidden');
+                    localStorage.setItem('rightSidebarHidden', isHidden);
+                    updateAllButtonPositions();
+                    resizeViewports();
+                });
+            }
+            
+            // Keyboard shortcut: 'H' to toggle both sidebars
+            document.addEventListener('keydown', function(e) {
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+                
+                if (e.key.toLowerCase() === 'h') {
+                    e.preventDefault();
+                    
+                    const leftIsHidden = leftSidebar?.classList.contains('sidebar-hidden');
+                    const rightIsHidden = rightSidebar?.classList.contains('sidebar-hidden');
+                    
+                    if (leftIsHidden && rightIsHidden) {
+                        // Both hidden, show both
+                        leftSidebar?.classList.remove('sidebar-hidden');
+                        rightSidebar?.classList.remove('sidebar-hidden');
+                        localStorage.setItem('leftSidebarHidden', 'false');
+                        localStorage.setItem('rightSidebarHidden', 'false');
+                    } else {
+                        // Hide both
+                        leftSidebar?.classList.add('sidebar-hidden');
+                        rightSidebar?.classList.add('sidebar-hidden');
+                        localStorage.setItem('leftSidebarHidden', 'true');
+                        localStorage.setItem('rightSidebarHidden', 'true');
+                    }
+                    
+                    updateAllButtonPositions();
+                    resizeViewports();
+                }
+            });
+        }
     </script>
 </body>
 

@@ -187,15 +187,26 @@ try {
         $total = $result->fetch_assoc()['total'];
     }
 
-    // Get patients with aggregated study information
+    // Get patients with aggregated study information including age calculation
     $sql = "SELECT
                 cp.patient_id,
                 cp.patient_name,
-                cp.patient_sex as sex,
+                cp.patient_sex as patient_sex,
                 cp.patient_birth_date as birth_date,
                 cp.study_count,
                 cp.last_study_date,
                 cp.orthanc_id,
+                CASE 
+                    WHEN cp.patient_birth_date IS NOT NULL AND cp.patient_birth_date != '' AND cp.patient_birth_date != '00000000'
+                    THEN TIMESTAMPDIFF(YEAR, 
+                        CASE 
+                            WHEN LENGTH(cp.patient_birth_date) = 8 
+                            THEN STR_TO_DATE(cp.patient_birth_date, '%Y%m%d')
+                            ELSE STR_TO_DATE(cp.patient_birth_date, '%Y-%m-%d')
+                        END, 
+                        CURDATE())
+                    ELSE NULL
+                END as age,
                 GROUP_CONCAT(DISTINCT cs.modality ORDER BY cs.modality SEPARATOR ',') as modalities,
                 GROUP_CONCAT(DISTINCT cs.study_description ORDER BY cs.study_date DESC SEPARATOR '|') as study_names
             FROM cached_patients cp

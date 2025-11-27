@@ -41,7 +41,23 @@ async function loadStudies(patientId) {
 
 function displayPatientInfo(patient) {
     document.getElementById('patientName').textContent = patient.patient_name || 'Unknown Patient';
-    document.getElementById('patientInfo').textContent = 'ID: ' + (patient.patient_id || 'N/A') + ' | DOB: ' + (patient.patient_birth_date || 'N/A') + ' | Sex: ' + (patient.patient_sex || 'N/A');
+    
+    // Calculate age
+    const age = calculateAge(patient.patient_birth_date);
+    const ageDisplay = age !== null ? age + ' yrs' : 'N/A';
+    
+    // Format sex display
+    const sex = patient.patient_sex || '';
+    const sexDisplay = sex === 'M' ? 'Male' : sex === 'F' ? 'Female' : sex || 'N/A';
+    
+    // Format DOB in dd/mm/yyyy
+    const dobDisplay = formatDate(patient.patient_birth_date);
+    
+    document.getElementById('patientInfo').textContent = 
+        'ID: ' + (patient.patient_id || 'N/A') + 
+        ' | Sex: ' + sexDisplay + 
+        ' | Age: ' + ageDisplay + 
+        ' | DOB: ' + dobDisplay;
 }
 
 function displayStudies(studies) {
@@ -71,6 +87,7 @@ function displayStudies(studies) {
                         <th>Study Description</th>
                         <th>Study Date</th>
                         <th>Modality</th>
+                        <th>Referred By</th>
                         <th>Images</th>
                         <th style="text-align: center;">Actions</th>
                     </tr>
@@ -85,26 +102,56 @@ function displayStudies(studies) {
 
 function createStudyTableRow(study) {
     const hasReport = !!study.orthanc_id;
-    const studyDesc = escapeHtml(study.study_description || study.study_name || 'Unnamed Study');
+    
+    // Build a meaningful study description
+    let studyDesc = '';
+    if (study.study_description && study.study_description.trim() && study.study_description.trim().toLowerCase() !== 'unnamed study') {
+        studyDesc = study.study_description.trim();
+    } else if (study.study_name && study.study_name.trim()) {
+        studyDesc = study.study_name.trim();
+    } else if (study.modality) {
+        // Use modality as fallback
+        studyDesc = study.modality + ' Study';
+    } else {
+        studyDesc = 'Medical Study';
+    }
+    
+    // Add study ID if available and different from description
+    const studyIdDisplay = study.study_id && study.study_id !== 'N/A' && study.study_id.trim() 
+        ? study.study_id 
+        : (study.accession_number || '');
+    
+    studyDesc = escapeHtml(studyDesc);
     const studyDate = formatDate(study.study_date);
     const studyTime = formatTime(study.study_time);
-    const modality = study.modality || 'N/A';
-    const imageCount = study.instance_count || '0';
+    const modality = study.modality || study.modalities || 'N/A';
+    const imageCount = study.instance_count || study.image_count || '0';
     const studyUID = study.study_instance_uid;
     const orthancId = study.orthanc_id;
 
+    const referredBy = escapeHtml(study.referred_by || '');
+    
     return `
         <tr id="study-${studyUID}">
             <td>
                 <strong>${studyDesc}</strong>
-                <br><small style="color: var(--text-secondary);">ID: ${study.study_id || 'N/A'}</small>
+                ${studyIdDisplay ? `<br><small style="color: var(--text-secondary);">ID: ${escapeHtml(studyIdDisplay)}</small>` : ''}
             </td>
             <td>
                 ${studyDate}
-                <br><small style="color: var(--text-secondary);">${studyTime}</small>
+                ${studyTime ? `<br><small style="color: var(--text-secondary);">${studyTime}</small>` : ''}
             </td>
             <td>
                 <span class="badge badge-info">${modality}</span>
+            </td>
+            <td>
+                ${referredBy ? `
+                    <span class="text-light">${referredBy}</span>
+                ` : `
+                    <button class="btn-sm btn-outline-secondary" onclick="showReferredByModal('${studyUID}')" title="Add Referring Doctor">
+                        <i class="bi bi-plus"></i> Add
+                    </button>
+                `}
             </td>
             <td>${imageCount} images</td>
             <td style="text-align: center;">
@@ -113,10 +160,13 @@ function createStudyTableRow(study) {
                         <i class="bi bi-box-arrow-up-right"></i> View
                     </button>
                     <button class="btn-sm btn-success" onclick="exportToJPG('${studyUID}', '${studyDesc}')" title="Export all images as JPG">
-                        <i class="bi bi-download"></i> Export JPG
+                        <i class="bi bi-download"></i> Export
                     </button>
                     <button class="btn-sm btn-warning" onclick="showRemarkModal('${studyUID}', '${studyDesc}')" title="Add/View Remarks">
                         <i class="bi bi-chat-square-text"></i> Remark
+                    </button>
+                    <button class="btn-sm btn-info" onclick="showPrescriptionModal('${studyUID}', '${studyDesc}')" title="Add/View Prescription">
+                        <i class="bi bi-prescription2"></i> Rx
                     </button>
                     <button class="btn-sm" onclick="viewReport('${studyUID}', '${orthancId}')" ${!hasReport ? 'disabled' : ''} title="View Report">
                         <i class="bi bi-file-earmark-text"></i> Report
@@ -298,20 +348,65 @@ function escapeHtml(text) {
 
 function formatDate(dateStr) {
     if (!dateStr) return 'N/A';
-    // Format DICOM date YYYYMMDD to YYYY-MM-DD
+    // Format DICOM date YYYYMMDD to DD/MM/YYYY
     if (dateStr.length === 8) {
-        return `${dateStr.substr(0, 4)}-${dateStr.substr(4, 2)}-${dateStr.substr(6, 2)}`;
+        return `${dateStr.substr(6, 2)}/${dateStr.substr(4, 2)}/${dateStr.substr(0, 4)}`;
+    }
+    // Handle YYYY-MM-DD format
+    if (dateStr.includes('-')) {
+        const parts = dateStr.split('-');
+        if (parts.length === 3) {
+            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
     }
     return dateStr;
 }
 
 function formatTime(timeStr) {
-    if (!timeStr) return 'N/A';
-    // Format DICOM time HHMMSS to HH:MM:SS
-    if (timeStr.length >= 6) {
-        return `${timeStr.substr(0, 2)}:${timeStr.substr(2, 2)}:${timeStr.substr(4, 2)}`;
+    if (!timeStr) return '';
+    // Clean up time string - remove any non-numeric characters except decimals
+    const cleanTime = timeStr.replace(/[^0-9.]/g, '');
+    
+    // Format DICOM time HHMMSS or HHMMSS.fraction to HH:MM:SS
+    if (cleanTime.length >= 6) {
+        const hours = cleanTime.substr(0, 2);
+        const minutes = cleanTime.substr(2, 2);
+        const seconds = cleanTime.substr(4, 2);
+        return `${hours}:${minutes}:${seconds}`;
+    } else if (cleanTime.length >= 4) {
+        const hours = cleanTime.substr(0, 2);
+        const minutes = cleanTime.substr(2, 2);
+        return `${hours}:${minutes}`;
     }
     return timeStr;
+}
+
+function calculateAge(birthDateStr) {
+    if (!birthDateStr) return null;
+    
+    let birthDate;
+    // Handle DICOM format YYYYMMDD
+    if (birthDateStr.length === 8 && !birthDateStr.includes('-')) {
+        birthDate = new Date(
+            parseInt(birthDateStr.substr(0, 4)),
+            parseInt(birthDateStr.substr(4, 2)) - 1,
+            parseInt(birthDateStr.substr(6, 2))
+        );
+    } else {
+        birthDate = new Date(birthDateStr);
+    }
+    
+    if (isNaN(birthDate.getTime())) return null;
+    
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+    }
+    
+    return age;
 }
 
 // Open study in viewer
@@ -520,4 +615,266 @@ function updateOpenReportsCount() {
 
 function printReport() {
     window.print();
+}
+
+// ========== REFERRED BY FUNCTIONS ==========
+
+function showReferredByModal(studyUID) {
+    // Create modal if not exists
+    let modal = document.getElementById('referredByModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'referredByModal';
+        modal.className = 'modal fade';
+        modal.tabIndex = -1;
+        modal.innerHTML = `
+            <div class="modal-dialog">
+                <div class="modal-content" style="background: var(--bg-secondary); border: 1px solid #444;">
+                    <div class="modal-header" style="border-bottom: 1px solid #444;">
+                        <h5 class="modal-title" style="color: var(--accent);">
+                            <i class="bi bi-person-badge me-2"></i>Add Referring Doctor
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label" style="color: var(--text-primary);">Doctor Name</label>
+                            <input type="text" class="form-control" id="referredByInput" placeholder="Dr. John Smith" 
+                                   style="background: var(--bg-tertiary); border-color: #444; color: var(--text-primary);">
+                        </div>
+                    </div>
+                    <div class="modal-footer" style="border-top: 1px solid #444;">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" onclick="saveReferredBy()">Save</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+    
+    state.currentStudyUID = studyUID;
+    document.getElementById('referredByInput').value = '';
+    
+    const bsModal = new bootstrap.Modal(modal);
+    bsModal.show();
+}
+
+async function saveReferredBy() {
+    const referredBy = document.getElementById('referredByInput').value.trim();
+    if (!referredBy) {
+        alert('Please enter a doctor name');
+        return;
+    }
+    
+    try {
+        const response = await fetch('../api/studies/update-referred-by.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                study_uid: state.currentStudyUID,
+                referred_by: referredBy
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('referredByModal'));
+            modal.hide();
+            
+            // Reload studies to show updated data
+            const urlParams = new URLSearchParams(window.location.search);
+            loadStudies(urlParams.get('patient_id'));
+        } else {
+            throw new Error(result.error || 'Failed to save');
+        }
+    } catch (error) {
+        alert('Error saving: ' + error.message);
+    }
+}
+
+// ========== PRESCRIPTION FUNCTIONS ==========
+
+function showPrescriptionModal(studyUID, studyDesc) {
+    // Create modal if not exists
+    let modal = document.getElementById('prescriptionModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'prescriptionModal';
+        modal.className = 'modal fade';
+        modal.tabIndex = -1;
+        modal.innerHTML = `
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content" style="background: var(--bg-secondary); border: 1px solid #444;">
+                    <div class="modal-header" style="border-bottom: 1px solid #444;">
+                        <h5 class="modal-title" style="color: var(--accent);">
+                            <i class="bi bi-prescription2 me-2"></i>Prescription: <span id="prescriptionStudyName"></span>
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <!-- Existing Prescription -->
+                        <div id="existingPrescription" style="display: none;" class="mb-4">
+                            <h6 style="color: var(--text-primary);"><i class="bi bi-check-circle text-success"></i> Current Prescription</h6>
+                            <div id="prescriptionDetails" class="p-3 rounded" style="background: var(--bg-tertiary); border: 1px solid #444;"></div>
+                        </div>
+                        
+                        <!-- Add/Update Prescription Form -->
+                        <div id="prescriptionForm">
+                            <h6 style="color: var(--text-primary);" class="mb-3">Add/Update Prescription</h6>
+                            
+                            <div class="mb-3">
+                                <label class="form-label" style="color: var(--text-primary);">Prescription Notes</label>
+                                <textarea class="form-control" id="prescriptionNotes" rows="4" 
+                                          placeholder="Enter prescription details, medications, dosage, etc."
+                                          style="background: var(--bg-tertiary); border-color: #444; color: var(--text-primary);"></textarea>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label" style="color: var(--text-primary);">Attach File (optional)</label>
+                                <input type="file" class="form-control" id="prescriptionFile" accept=".pdf,.jpg,.jpeg,.png"
+                                       style="background: var(--bg-tertiary); border-color: #444; color: var(--text-primary);">
+                                <small class="text-muted">Supported: PDF, JPG, PNG. Max 5MB</small>
+                            </div>
+                            
+                            <div id="currentAttachment" style="display: none;" class="mb-3">
+                                <label class="form-label" style="color: var(--text-primary);">Current Attachment</label>
+                                <div class="d-flex align-items-center gap-2">
+                                    <a href="#" id="attachmentLink" target="_blank" class="btn btn-sm btn-outline-info">
+                                        <i class="bi bi-file-earmark"></i> View Attachment
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removePrescriptionAttachment()">
+                                        <i class="bi bi-trash"></i> Remove
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer" style="border-top: 1px solid #444;">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" onclick="savePrescription()">
+                            <i class="bi bi-save"></i> Save Prescription
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+    
+    state.currentStudyUID = studyUID;
+    document.getElementById('prescriptionStudyName').textContent = studyDesc;
+    document.getElementById('prescriptionNotes').value = '';
+    document.getElementById('prescriptionFile').value = '';
+    document.getElementById('existingPrescription').style.display = 'none';
+    document.getElementById('currentAttachment').style.display = 'none';
+    
+    // Load existing prescription
+    loadPrescription(studyUID);
+    
+    const bsModal = new bootstrap.Modal(modal);
+    bsModal.show();
+}
+
+async function loadPrescription(studyUID) {
+    try {
+        const response = await fetch(`../api/studies/prescription.php?study_uid=${encodeURIComponent(studyUID)}`);
+        const result = await response.json();
+        
+        if (result.success && result.prescription) {
+            const rx = result.prescription;
+            
+            // Show existing prescription
+            document.getElementById('existingPrescription').style.display = 'block';
+            document.getElementById('prescriptionDetails').innerHTML = `
+                <p style="color: var(--text-primary); white-space: pre-wrap;">${escapeHtml(rx.notes || 'No notes')}</p>
+                <small class="text-muted">
+                    <i class="bi bi-person"></i> ${escapeHtml(rx.created_by_name || 'Unknown')} | 
+                    <i class="bi bi-clock"></i> ${new Date(rx.created_at).toLocaleString()}
+                </small>
+            `;
+            
+            // Pre-fill form
+            document.getElementById('prescriptionNotes').value = rx.notes || '';
+            
+            // Show attachment if exists
+            if (rx.attachment_path) {
+                document.getElementById('currentAttachment').style.display = 'block';
+                document.getElementById('attachmentLink').href = '../' + rx.attachment_path;
+            }
+        }
+    } catch (error) {
+        console.error('Error loading prescription:', error);
+    }
+}
+
+async function savePrescription() {
+    const notes = document.getElementById('prescriptionNotes').value.trim();
+    const fileInput = document.getElementById('prescriptionFile');
+    
+    if (!notes && !fileInput.files[0]) {
+        alert('Please enter prescription notes or attach a file');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('study_uid', state.currentStudyUID);
+    formData.append('notes', notes);
+    
+    if (fileInput.files[0]) {
+        // Validate file size (5MB)
+        if (fileInput.files[0].size > 5 * 1024 * 1024) {
+            alert('File too large. Maximum size is 5MB');
+            return;
+        }
+        formData.append('attachment', fileInput.files[0]);
+    }
+    
+    try {
+        const response = await fetch('../api/studies/prescription.php', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('Prescription saved successfully!');
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('prescriptionModal'));
+            modal.hide();
+        } else {
+            throw new Error(result.error || 'Failed to save');
+        }
+    } catch (error) {
+        alert('Error saving prescription: ' + error.message);
+    }
+}
+
+async function removePrescriptionAttachment() {
+    if (!confirm('Are you sure you want to remove the attachment?')) return;
+    
+    try {
+        const response = await fetch('../api/studies/prescription.php', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                study_uid: state.currentStudyUID,
+                remove_attachment_only: true
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            document.getElementById('currentAttachment').style.display = 'none';
+            alert('Attachment removed');
+        } else {
+            throw new Error(result.error);
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
 }

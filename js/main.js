@@ -92,11 +92,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Core application functions
     function initializeUI() {
+        // No default tool on initialization - all tools disabled
         const toolsPanel = document.getElementById('tools-panel');
-        const wlButton = toolsPanel.querySelector('[data-tool="Wwwc"]');
-        if (wlButton) {
-            window.DICOM_VIEWER.setActiveTool('Wwwc', wlButton);
-        }
+        toolsPanel.querySelectorAll('.tool-btn').forEach(btn => {
+            btn.classList.remove('btn-primary', 'active');
+            btn.classList.add('btn-secondary');
+        });
 
         ['mprAxial', 'mprSagittal', 'mprCoronal', 'mprAll'].forEach(id => {
             const btn = document.getElementById(id);
@@ -104,10 +105,10 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         setTimeout(() => {
-            window.DICOM_VIEWER.showAISuggestion('Welcome to Enhanced DICOM Viewer! Upload DICOM files to start. MPR views will be automatically generated for multi-slice series.');
+            window.DICOM_VIEWER.showAISuggestion('Welcome to Accurate Viewer! Upload DICOM files to start. MPR views will be automatically generated for multi-slice series.');
         }, 1000);
 
-        console.log('Enhanced DICOM Viewer initialized with MPR support');
+        console.log('Accurate Viewer initialized - no default tool active');
     }
 
 
@@ -1387,6 +1388,7 @@ window.DICOM_VIEWER.updatePatientInfo = function(data) {
     const imageInfo = document.getElementById('imageInfo');
     const mprInfo = document.getElementById('mprInfo');
 
+    // Update sidebar patient info (existing)
     if (patientInfo) {
         patientInfo.innerHTML = `
             <div>Name: ${data.patient_name || '-'}</div>
@@ -1425,6 +1427,89 @@ window.DICOM_VIEWER.updatePatientInfo = function(data) {
             <div>Slice Position: Active</div>
         `;
     }
+    
+    // Update the main viewer patient info bar (#13)
+    window.DICOM_VIEWER.updateViewerPatientInfoBar(data);
+};
+
+// New function to update the patient info bar in the NAVBAR (#13)
+window.DICOM_VIEWER.updateViewerPatientInfoBar = function(data) {
+    // Update navbar patient info
+    const navbarInfo = document.getElementById('navbar-patient-info');
+    if (!navbarInfo) return;
+    
+    // Show the info bar when we have data
+    if (data && (data.patient_name || data.patient_id)) {
+        navbarInfo.style.display = 'flex';
+        navbarInfo.style.cssText = 'display: flex !important;';
+    }
+    
+    // Update patient name
+    const nameEl = document.getElementById('nav-patient-name');
+    if (nameEl) nameEl.textContent = data.patient_name || 'Unknown';
+    
+    // Update patient ID
+    const idEl = document.getElementById('nav-patient-id');
+    if (idEl) idEl.textContent = data.patient_id || '-';
+    
+    // Calculate and update age
+    const ageEl = document.getElementById('nav-patient-age');
+    if (ageEl) {
+        let age = '-';
+        
+        // First check if age is directly provided
+        if (data.patient_age) {
+            age = data.patient_age;
+        } else if (data.age) {
+            age = data.age;
+        } else if (data.patient_birth_date) {
+            // Calculate from birth date
+            const birthDateStr = String(data.patient_birth_date);
+            let birthDate;
+            
+            // Handle DICOM format YYYYMMDD
+            if (birthDateStr.length === 8 && !birthDateStr.includes('-')) {
+                birthDate = new Date(
+                    parseInt(birthDateStr.substr(0, 4)),
+                    parseInt(birthDateStr.substr(4, 2)) - 1,
+                    parseInt(birthDateStr.substr(6, 2))
+                );
+            } else if (birthDateStr.includes('-')) {
+                birthDate = new Date(birthDateStr);
+            }
+            
+            if (birthDate && !isNaN(birthDate.getTime())) {
+                const today = new Date();
+                let calcAge = today.getFullYear() - birthDate.getFullYear();
+                const monthDiff = today.getMonth() - birthDate.getMonth();
+                if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                    calcAge--;
+                }
+                age = calcAge + ' yrs';
+            }
+        }
+        ageEl.textContent = age;
+    }
+    
+    // Update sex with icon
+    const sexEl = document.getElementById('nav-patient-sex');
+    const sexIcon = document.getElementById('nav-sex-icon');
+    const sexBadge = document.getElementById('nav-sex-badge');
+    if (sexEl && sexIcon) {
+        const sex = (data.patient_sex || data.sex || '').toUpperCase();
+        if (sex === 'M' || sex === 'MALE') {
+            sexEl.textContent = 'Male';
+            sexIcon.className = 'bi bi-gender-male text-info me-1';
+        } else if (sex === 'F' || sex === 'FEMALE') {
+            sexEl.textContent = 'Female';
+            sexIcon.className = 'bi bi-gender-female text-danger me-1';
+        } else {
+            sexEl.textContent = sex || '-';
+            sexIcon.className = 'bi bi-gender-ambiguous text-warning me-1';
+        }
+    }
+    
+    console.log('Navbar patient info updated:', data.patient_name, 'Age:', ageEl?.textContent);
 };
 
 window.DICOM_VIEWER.updateViewportInfo = function() {
@@ -1469,8 +1554,36 @@ window.DICOM_VIEWER.setViewportLayout = function(layout) {
 window.DICOM_VIEWER.setActiveTool = function(toolName, clickedButton) {
     const toolNameMap = window.DICOM_VIEWER.CONSTANTS.TOOL_NAME_MAP;
     const toolsPanel = document.getElementById('tools-panel');
+    const state = window.DICOM_VIEWER.STATE;
+    
+    // Track current active tool in state
+    if (!state.activeTool) state.activeTool = null;
     
     try {
+        // If clicking the same tool that's already active, disable it (toggle off)
+        if (state.activeTool === toolName) {
+            console.log(`Toggling off active tool: ${toolName}`);
+            
+            // Disable the tool
+            try {
+                cornerstoneTools.setToolDisabled(toolName);
+            } catch (error) { /* ignore */ }
+            
+            // Clear active state
+            state.activeTool = null;
+            
+            // Update button styling - remove active classes
+            if (clickedButton) {
+                clickedButton.classList.remove('btn-primary', 'active');
+                clickedButton.classList.add('btn-secondary');
+                clickedButton.removeAttribute('aria-pressed');
+                clickedButton.style.transform = '';
+            }
+            
+            window.DICOM_VIEWER.showAISuggestion('Tool disabled - drag and drop now available');
+            return;
+        }
+        
         console.log(`Setting active tool: ${toolName}`);
         
         // Disable all tools first
@@ -1482,12 +1595,16 @@ window.DICOM_VIEWER.setActiveTool = function(toolName, clickedButton) {
 
         // Activate the selected tool
         cornerstoneTools.setToolActive(toolName, { mouseButtonMask: 1 });
+        
+        // Update state
+        state.activeTool = toolName;
 
         // Update all button states - remove active classes first
         toolsPanel.querySelectorAll('.tool-btn').forEach(btn => {
             btn.classList.remove('btn-primary', 'active');
             btn.classList.add('btn-secondary');
             btn.removeAttribute('aria-pressed');
+            btn.style.transform = '';
         });
 
         // Set the clicked button as active with enhanced styling
@@ -1498,11 +1615,6 @@ window.DICOM_VIEWER.setActiveTool = function(toolName, clickedButton) {
             
             // Add visual feedback
             clickedButton.style.transform = 'scale(1.05)';
-            setTimeout(() => {
-                if (clickedButton.classList.contains('active')) {
-                    clickedButton.style.transform = 'scale(1.05)';
-                }
-            }, 150);
         }
 
         console.log(`Tool ${toolName} activated successfully`);
@@ -1545,21 +1657,32 @@ window.DICOM_VIEWER.handleToolSelection = function(event) {
     }
 };
 
-// 3. Set Pan as default tool on initialization
+// 3. No default tool on initialization - all tools disabled by default
 function setDefaultTool() {
-    console.log('Setting Pan as default tool...');
+    console.log('Initializing with no default tool - all tools disabled');
     const toolsPanel = document.getElementById('tools-panel');
-    const panButton = toolsPanel.querySelector('[data-tool="Pan"]');
+    const state = window.DICOM_VIEWER.STATE;
     
-    if (panButton) {
-        // Use timeout to ensure everything is initialized
-        setTimeout(() => {
-            window.DICOM_VIEWER.setActiveTool('Pan', panButton);
-            console.log('Pan tool set as default');
-        }, 500);
-    } else {
-        console.error('Pan button not found');
-    }
+    // Clear any active tool state
+    state.activeTool = null;
+    
+    // Deactivate all tools
+    const toolNameMap = window.DICOM_VIEWER.CONSTANTS.TOOL_NAME_MAP;
+    Object.values(toolNameMap).forEach(tool => {
+        try {
+            cornerstoneTools.setToolDisabled(tool);
+        } catch (error) { /* ignore */ }
+    });
+    
+    // Remove active styling from all buttons
+    toolsPanel.querySelectorAll('.tool-btn').forEach(btn => {
+        btn.classList.remove('btn-primary', 'active');
+        btn.classList.add('btn-secondary');
+        btn.removeAttribute('aria-pressed');
+        btn.style.transform = '';
+    });
+    
+    console.log('All tools disabled - drag and drop is now available');
 }
 
 window.DICOM_VIEWER.handleImageSliderChange = function(event) {

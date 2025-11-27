@@ -206,6 +206,46 @@ $detectedIP = getLocalIPAddress();
                         </select>
                     </div>
                 </div>
+                
+                <!-- Hospital Logo Upload -->
+                <div class="row mt-3">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label text-light">Hospital Logo</label>
+                        <div class="d-flex align-items-center gap-3">
+                            <div id="logoPreviewContainer" class="border border-secondary rounded p-2" style="width: 120px; height: 80px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.05);">
+                                <img id="logoPreview" src="" alt="Logo Preview" style="max-width: 100%; max-height: 100%; display: none;">
+                                <span id="noLogoText" class="text-muted small"><i class="bi bi-image"></i> No Logo</span>
+                            </div>
+                            <div class="flex-grow-1">
+                                <input type="file" class="form-control" id="hospitalLogoInput" accept=".jpg,.jpeg,.png" style="display: none;">
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="document.getElementById('hospitalLogoInput').click()">
+                                    <i class="bi bi-upload"></i> Upload Logo
+                                </button>
+                                <button type="button" class="btn btn-outline-danger btn-sm" id="removeLogoBtn" onclick="removeLogo()" style="display: none;">
+                                    <i class="bi bi-trash"></i> Remove
+                                </button>
+                                <div class="form-text text-muted small mt-1">
+                                    Supported: JPG, PNG. Max 2MB. Recommended: 200x100px
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label text-light">Logo Display</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="show_logo_header" id="showLogoHeader" checked>
+                            <label class="form-check-label text-light" for="showLogoHeader">
+                                Show logo in application header
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="show_logo_print" id="showLogoPrint" checked>
+                            <label class="form-check-label text-light" for="showLogoPrint">
+                                Show logo in print/PDF exports
+                            </label>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- DICOM Nodes Configuration -->
@@ -486,6 +526,7 @@ $detectedIP = getLocalIPAddress();
             loadSettings();
             loadNodes();
             loadPrinters();
+            loadCurrentLogo();
             setupEventListeners();
         });
 
@@ -661,7 +702,10 @@ $detectedIP = getLocalIPAddress();
                 const data = await response.json();
                 
                 if (data.success && data.printers.length > 0) {
-                    tbody.innerHTML = data.printers.map(printer => `
+                    tbody.innerHTML = data.printers.map(printer => {
+                        // Escape printer data for safe JSON embedding
+                        const printerData = JSON.stringify(printer).replace(/'/g, '&#39;').replace(/"/g, '&quot;');
+                        return `
                         <tr>
                             <td>${printer.name}</td>
                             <td>${printer.ae_title}</td>
@@ -669,15 +713,16 @@ $detectedIP = getLocalIPAddress();
                             <td>${printer.port}</td>
                             <td>${printer.is_active == 1 ? '<span class="badge bg-success">Active</span>' : '<span class="badge bg-secondary">Inactive</span>'}</td>
                             <td>
-                                <button class="btn btn-sm btn-outline-primary btn-action" onclick='editPrinter(${JSON.stringify(printer)})'>
+                                <button type="button" class="btn btn-sm btn-outline-primary btn-action" onclick="event.preventDefault(); event.stopPropagation(); editPrinter(JSON.parse(this.dataset.printer));" data-printer="${printerData}">
                                     <i class="bi bi-pencil"></i>
                                 </button>
-                                <button class="btn btn-sm btn-outline-danger btn-action" onclick="deletePrinter(${printer.id})">
+                                <button type="button" class="btn btn-sm btn-outline-danger btn-action" onclick="event.preventDefault(); event.stopPropagation(); deletePrinter(${printer.id});">
                                     <i class="bi bi-trash"></i>
                                 </button>
                             </td>
                         </tr>
-                    `).join('');
+                    `;
+                    }).join('');
                 } else {
                     tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No printers configured</td></tr>';
                 }
@@ -693,6 +738,16 @@ $detectedIP = getLocalIPAddress();
         }
 
         function editPrinter(printer) {
+            // Prevent any default behavior
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            
+            // Reset form first
+            document.getElementById('printerForm').reset();
+            
+            // Set values
             document.getElementById('printerId').value = printer.id;
             document.getElementById('printerName').value = printer.name;
             document.getElementById('printerAET').value = printer.ae_title;
@@ -700,7 +755,10 @@ $detectedIP = getLocalIPAddress();
             document.getElementById('printerPort').value = printer.port;
             document.getElementById('printerDesc').value = printer.description || '';
             document.getElementById('printerActive').checked = printer.is_active == 1;
+            
+            // Show modal
             printerModal.show();
+            return false;
         }
 
         async function savePrinter() {
@@ -927,6 +985,117 @@ $detectedIP = getLocalIPAddress();
             document.getElementById('saveAllBtn').addEventListener('click', saveAllSettings);
             document.getElementById('testOrthancBtn').addEventListener('click', testOrthancConnection);
             document.getElementById('saveOrthancConfigBtn').addEventListener('click', saveOrthancConfiguration);
+            
+            // Logo upload handler
+            document.getElementById('hospitalLogoInput').addEventListener('change', handleLogoUpload);
+        }
+        
+        // Hospital Logo Functions
+        async function handleLogoUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // Validate file type
+            const validTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+            if (!validTypes.includes(file.type)) {
+                alert('Please select a valid image file (JPG or PNG)');
+                return;
+            }
+            
+            // Validate file size (2MB max)
+            if (file.size > 2 * 1024 * 1024) {
+                alert('File size must be less than 2MB');
+                return;
+            }
+            
+            // Show preview immediately
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('logoPreview').src = e.target.result;
+                document.getElementById('logoPreview').style.display = 'block';
+                document.getElementById('noLogoText').style.display = 'none';
+                document.getElementById('removeLogoBtn').style.display = 'inline-block';
+            };
+            reader.readAsDataURL(file);
+            
+            // Upload to server
+            const formData = new FormData();
+            formData.append('logo', file);
+            
+            try {
+                const response = await fetch(`${basePath}/api/settings/upload-logo.php`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showSuccess('Logo uploaded successfully!');
+                } else {
+                    alert('Error uploading logo: ' + result.error);
+                }
+            } catch (error) {
+                alert('Error uploading logo: ' + error.message);
+            }
+        }
+        
+        async function removeLogo() {
+            if (!confirm('Are you sure you want to remove the hospital logo?')) return;
+            
+            try {
+                const response = await fetch(`${basePath}/api/settings/upload-logo.php`, {
+                    method: 'DELETE'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    document.getElementById('logoPreview').style.display = 'none';
+                    document.getElementById('logoPreview').src = '';
+                    document.getElementById('noLogoText').style.display = 'block';
+                    document.getElementById('removeLogoBtn').style.display = 'none';
+                    document.getElementById('hospitalLogoInput').value = '';
+                    showSuccess('Logo removed successfully!');
+                } else {
+                    alert('Error removing logo: ' + result.error);
+                }
+            } catch (error) {
+                alert('Error removing logo: ' + error.message);
+            }
+        }
+        
+        async function loadCurrentLogo() {
+            try {
+                const response = await fetch(`${basePath}/api/settings/upload-logo.php`);
+                const result = await response.json();
+                
+                if (result.success && result.logo_path) {
+                    // Build full path including basePath
+                    const logoPreview = document.getElementById('logoPreview');
+                    const fullLogoPath = `${basePath}/${result.logo_path}`;
+                    
+                    // Add cache buster to prevent caching issues
+                    logoPreview.src = fullLogoPath + '?t=' + Date.now();
+                    
+                    // Wait for image to load before showing
+                    logoPreview.onload = function() {
+                        logoPreview.style.display = 'block';
+                        document.getElementById('noLogoText').style.display = 'none';
+                        document.getElementById('removeLogoBtn').style.display = 'inline-block';
+                    };
+                    
+                    // Handle load error
+                    logoPreview.onerror = function() {
+                        console.error('Failed to load logo from:', fullLogoPath);
+                        logoPreview.style.display = 'none';
+                        document.getElementById('noLogoText').style.display = 'block';
+                        document.getElementById('removeLogoBtn').style.display = 'none';
+                    };
+                }
+            } catch (error) {
+                console.error('Error loading logo:', error);
+            }
         }
 
         function showSuccess(message) {

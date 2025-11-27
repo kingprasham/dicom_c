@@ -51,7 +51,7 @@ $importStats['backed_up_count'] = $backupCount['backed_up_count'] ?? 0;
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="base-path" content="<?= BASE_PATH ?>">
-    <title>Hospital Data Configuration - DICOM Viewer</title>
+    <title>Hospital Data Configuration - Accurate Viewer</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <style>
@@ -171,7 +171,7 @@ $importStats['backed_up_count'] = $backupCount['backed_up_count'] ?? 0;
         <div class="container-fluid">
             <a class="navbar-brand text-white" href="<?= BASE_PATH ?>/patients.php">
                 <i class="bi bi-heart-pulse-fill text-primary"></i>
-                DICOM Viewer Pro
+                Accurate Viewer
             </a>
             <div class="d-flex align-items-center gap-3">
                 <a href="<?= BASE_PATH ?>/admin/settings.php" class="btn btn-sm btn-outline-secondary">
@@ -306,9 +306,12 @@ $importStats['backed_up_count'] = $backupCount['backed_up_count'] ?? 0;
                                 <li><strong>Create Credentials:</strong> Credentials → Create → Service Account</li>
                                 <li><strong>Download JSON:</strong> Service Account → Keys → Add Key → JSON → Download</li>
                             </ol>
-                            <div class="mt-2">
+                            <div class="mt-2 d-flex gap-2">
                                 <a href="<?= BASE_PATH ?>/admin/gdrive-guide.php" target="_blank" class="btn btn-sm btn-outline-primary">
-                                    <i class="bi bi-book"></i> Detailed Guide
+                                    <i class="bi bi-google"></i> Google Drive Guide
+                                </a>
+                                <a href="<?= BASE_PATH ?>/admin/dropbox-guide.php" target="_blank" class="btn btn-sm btn-outline-info">
+                                    <i class="bi bi-dropbox"></i> Dropbox Guide
                                 </a>
                             </div>
                         </div>
@@ -415,6 +418,84 @@ $importStats['backed_up_count'] = $backupCount['backed_up_count'] ?? 0;
                         <button type="button" class="btn btn-primary" id="saveScheduleBtn">Save Schedule</button>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Auto-Folder Monitoring - Multiple Paths Support -->
+        <div class="config-card">
+            <h4 class="text-white mb-4">
+                <i class="bi bi-folder-symlink text-primary"></i>
+                Auto-Folder Monitoring (Multiple Paths)
+            </h4>
+            
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i>
+                Automatically detect and sync new DICOM folders. You can monitor <strong>multiple folder paths</strong> simultaneously.
+            </div>
+
+            <!-- Add New Path -->
+            <div class="mb-3">
+                <label class="form-label text-light">Add Monitored Folder Path</label>
+                <div class="input-group">
+                    <input type="text" class="form-control" id="monitoredFolderPath" placeholder="C:\DICOM_Data or /var/dicom">
+                    <input type="text" class="form-control" id="monitoredPathName" placeholder="Name (optional)" style="max-width: 200px;">
+                    <button class="btn btn-success" type="button" id="saveMonitorPathBtn">
+                        <i class="bi bi-plus-circle"></i> Add Path
+                    </button>
+                </div>
+                <small class="form-text text-muted">Add multiple folder paths to monitor for new DICOM studies</small>
+            </div>
+
+            <!-- List of Monitored Paths -->
+            <div class="mb-3">
+                <h6 class="text-light">Active Monitored Paths</h6>
+                <div id="monitoredPathsList" class="border border-secondary rounded p-2" style="max-height: 200px; overflow-y: auto; background: rgba(0,0,0,0.2);">
+                    <div class="text-center text-muted"><small>No paths configured</small></div>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="autoSyncEnabled" checked>
+                        <label class="form-check-label text-light" for="autoSyncEnabled">
+                            Enable Auto-Sync (checks every 30 seconds)
+                        </label>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-success" id="manualSyncBtn">
+                            <i class="bi bi-arrow-repeat"></i> Sync Now
+                        </button>
+                        <button type="button" class="btn btn-outline-info" id="checkNewFoldersBtn">
+                            <i class="bi bi-folder-check"></i> Check for New Folders
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sync Status -->
+            <div id="autoSyncStatus" class="mt-3" style="display:none;">
+                <div class="alert alert-secondary">
+                    <div class="d-flex align-items-center">
+                        <span class="spinner-border spinner-border-sm me-2"></span>
+                        <span id="syncStatusText">Checking for new folders...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detected Folders List -->
+            <div id="detectedFoldersContainer" style="display:none;" class="mt-3">
+                <h6 class="text-light">Recently Detected Folders</h6>
+                <div id="detectedFoldersList" class="border border-secondary rounded p-2" style="max-height: 200px; overflow-y: auto; background: rgba(0,0,0,0.2);">
+                </div>
+            </div>
+
+            <div class="mt-3">
+                <small class="text-muted">
+                    <i class="bi bi-clock-history"></i> Last Check: <span id="lastSyncCheck">Never</span>
+                </small>
             </div>
         </div>
 
@@ -1180,6 +1261,271 @@ $importStats['backed_up_count'] = $backupCount['backed_up_count'] ?? 0;
             .rotate { animation: rotate 1s linear infinite; }
         `;
         document.head.appendChild(style);
+        
+        // ========== AUTO-FOLDER MONITORING (MULTIPLE PATHS) ==========
+        let autoSyncInterval = null;
+        
+        // Initialize auto-sync on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadMonitoredPaths();
+            
+            // Start auto-sync if enabled
+            if (document.getElementById('autoSyncEnabled').checked) {
+                startAutoSync();
+            }
+            
+            // Event listeners
+            document.getElementById('autoSyncEnabled').addEventListener('change', function() {
+                if (this.checked) {
+                    startAutoSync();
+                } else {
+                    stopAutoSync();
+                }
+            });
+            
+            document.getElementById('saveMonitorPathBtn').addEventListener('click', addMonitoredPath);
+            document.getElementById('manualSyncBtn').addEventListener('click', triggerManualSync);
+            document.getElementById('checkNewFoldersBtn').addEventListener('click', checkNewFolders);
+        });
+        
+        async function loadMonitoredPaths() {
+            try {
+                const response = await fetch(`${basePath}/api/hospital-config/auto-sync.php?action=get_all_paths`);
+                const data = await response.json();
+                
+                const container = document.getElementById('monitoredPathsList');
+                
+                if (data.success && data.paths && data.paths.length > 0) {
+                    container.innerHTML = data.paths.map(p => `
+                        <div class="d-flex justify-content-between align-items-center p-2 border-bottom border-secondary">
+                            <div>
+                                <strong class="text-light">${p.name || 'Unnamed'}</strong>
+                                <br><small class="text-muted">${p.path}</small>
+                                ${p.last_checked ? `<br><small class="text-info">Last check: ${new Date(p.last_checked).toLocaleString()}</small>` : ''}
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-sm ${p.is_active == 1 ? 'btn-success' : 'btn-secondary'}" onclick="togglePath(${p.id}, ${p.is_active == 1 ? 0 : 1})">
+                                    <i class="bi bi-${p.is_active == 1 ? 'check-circle' : 'pause-circle'}"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="removePath(${p.id})">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<div class="text-center text-muted p-3"><small>No paths configured. Add a folder path above.</small></div>';
+                }
+            } catch (error) {
+                console.error('Error loading monitored paths:', error);
+            }
+        }
+        
+        async function addMonitoredPath() {
+            const path = document.getElementById('monitoredFolderPath').value.trim();
+            const name = document.getElementById('monitoredPathName').value.trim();
+            
+            if (!path) {
+                alert('Please enter a folder path');
+                return;
+            }
+            
+            const btn = document.getElementById('saveMonitorPathBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+            
+            try {
+                const response = await fetch(`${basePath}/api/hospital-config/auto-sync.php`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'add_path', path: path, name: name })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById('monitoredFolderPath').value = '';
+                    document.getElementById('monitoredPathName').value = '';
+                    loadMonitoredPaths();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (error) {
+                alert('Error adding path: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-plus-circle"></i> Add Path';
+            }
+        }
+        
+        async function togglePath(id, newState) {
+            try {
+                const response = await fetch(`${basePath}/api/hospital-config/auto-sync.php`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'toggle_path', id: id, is_active: newState })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    loadMonitoredPaths();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+        
+        async function removePath(id) {
+            if (!confirm('Remove this monitored path?')) return;
+            
+            try {
+                const response = await fetch(`${basePath}/api/hospital-config/auto-sync.php`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: id })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    loadMonitoredPaths();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+        
+        function startAutoSync() {
+            if (autoSyncInterval) clearInterval(autoSyncInterval);
+            
+            // Check every 30 seconds
+            autoSyncInterval = setInterval(checkAndSyncFolders, 30000);
+            console.log('Auto-sync started');
+        }
+        
+        function stopAutoSync() {
+            if (autoSyncInterval) {
+                clearInterval(autoSyncInterval);
+                autoSyncInterval = null;
+            }
+            console.log('Auto-sync stopped');
+        }
+        
+        async function checkAndSyncFolders() {
+            const statusDiv = document.getElementById('autoSyncStatus');
+            const statusText = document.getElementById('syncStatusText');
+            const lastCheck = document.getElementById('lastSyncCheck');
+            
+            statusDiv.style.display = 'block';
+            statusText.textContent = 'Checking for new folders...';
+            
+            try {
+                const response = await fetch(`${basePath}/api/hospital-config/auto-sync.php?action=check_and_sync`);
+                const data = await response.json();
+                
+                lastCheck.textContent = new Date().toLocaleTimeString();
+                
+                if (data.success) {
+                    if (data.new_folders && data.new_folders.length > 0) {
+                        statusText.textContent = `Found ${data.new_folders.length} new folder(s)! Syncing...`;
+                        displayDetectedFolders(data.new_folders);
+                        
+                        // Trigger sync
+                        await triggerSyncOrthanc();
+                        statusText.textContent = `Synced ${data.new_folders.length} new folder(s)`;
+                    } else {
+                        statusText.textContent = 'No new folders found';
+                    }
+                    
+                    // Hide status after 3 seconds if no new folders
+                    setTimeout(() => {
+                        if (!data.new_folders || data.new_folders.length === 0) {
+                            statusDiv.style.display = 'none';
+                        }
+                    }, 3000);
+                } else {
+                    statusText.textContent = 'Error: ' + data.error;
+                }
+            } catch (error) {
+                statusText.textContent = 'Error checking folders: ' + error.message;
+            }
+        }
+        
+        async function checkNewFolders() {
+            const btn = document.getElementById('checkNewFoldersBtn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Checking...';
+            btn.disabled = true;
+            
+            try {
+                const response = await fetch(`${basePath}/api/hospital-config/auto-sync.php?action=check_folders`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    if (data.folders && data.folders.length > 0) {
+                        displayDetectedFolders(data.folders);
+                        alert(`Found ${data.folders.length} folder(s) in monitored path`);
+                    } else {
+                        alert('No folders found in monitored path');
+                    }
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+        
+        function displayDetectedFolders(folders) {
+            const container = document.getElementById('detectedFoldersContainer');
+            const list = document.getElementById('detectedFoldersList');
+            
+            container.style.display = 'block';
+            list.innerHTML = folders.map(folder => `
+                <div class="text-light small p-1 border-bottom border-secondary">
+                    <i class="bi bi-folder-fill text-warning"></i> ${folder.name || folder}
+                    ${folder.is_new ? '<span class="badge bg-success ms-2">NEW</span>' : ''}
+                </div>
+            `).join('');
+        }
+        
+        async function triggerManualSync() {
+            const btn = document.getElementById('manualSyncBtn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Syncing...';
+            btn.disabled = true;
+            
+            try {
+                // First check for new folders
+                await checkAndSyncFolders();
+                
+                // Then trigger Orthanc sync
+                await triggerSyncOrthanc();
+                
+                alert('Sync completed successfully!');
+            } catch (error) {
+                alert('Error during sync: ' + error.message);
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+        
+        async function triggerSyncOrthanc() {
+            try {
+                const response = await fetch(`${basePath}/api/sync_orthanc_api.php`);
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error('Orthanc sync error:', error);
+                throw error;
+            }
+        }
     </script>
 </body>
 </html>
