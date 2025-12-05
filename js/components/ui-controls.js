@@ -147,11 +147,17 @@ window.DICOM_VIEWER.UIControls = {
   },
 
   setupLayoutControls() {
-    document.querySelectorAll("[data-layout]").forEach((btn) => {
+    const layoutButtons = document.querySelectorAll("[data-layout]");
+    console.log('[DEBUG] setupLayoutControls found', layoutButtons.length, 'layout buttons');
+
+    layoutButtons.forEach((btn) => {
       btn.removeEventListener("click", btn._layoutHandler);
       btn._layoutHandler = (e) => {
         e.preventDefault();
         const layout = e.target.closest("[data-layout]").dataset.layout;
+
+        console.log('[DEBUG] Layout button clicked:', layout);
+        console.log('[DEBUG] viewportManager exists:', !!window.DICOM_VIEWER.MANAGERS.viewportManager);
 
         if (
           window.DICOM_VIEWER.MANAGERS.viewportManager &&
@@ -165,8 +171,12 @@ window.DICOM_VIEWER.UIControls = {
           e.target.closest("[data-layout]").classList.remove("btn-secondary");
           e.target.closest("[data-layout]").classList.add("btn-primary");
 
-          console.log(`Layout switched to: ${layout}`);
-          window.DICOM_VIEWER.showAISuggestion(`Layout changed to ${layout}`);
+          console.log(`[DEBUG] Layout switched to: ${layout}`);
+          if (window.DICOM_VIEWER.showAISuggestion) {
+            window.DICOM_VIEWER.showAISuggestion(`Layout changed to ${layout}`);
+          }
+        } else {
+          console.error('[DEBUG] Layout switch failed for:', layout);
         }
       };
       btn.addEventListener("click", btn._layoutHandler);
@@ -180,8 +190,14 @@ window.DICOM_VIEWER.UIControls = {
         const crosshairManager = window.DICOM_VIEWER.MANAGERS.crosshairManager;
         const referenceLinesManager = window.DICOM_VIEWER.MANAGERS.referenceLinesManager;
 
-        if (!crosshairCheckbox || !referenceLinesCheckbox || !crosshairManager || !referenceLinesManager) {
-            console.error('Could not find all required elements or managers for crosshair/reference lines control.');
+        // If elements don't exist, just skip this setup - not an error
+        if (!crosshairCheckbox || !referenceLinesCheckbox) {
+            console.log('Crosshair/Reference line checkboxes not found in UI - skipping setup');
+            return;
+        }
+
+        if (!crosshairManager || !referenceLinesManager) {
+            console.warn('Crosshair or reference lines manager not initialized');
             return;
         }
 
@@ -329,6 +345,12 @@ window.DICOM_VIEWER.UIControls = {
     const axialSlider = document.getElementById("axialSlider");
     const sagittalSlider = document.getElementById("sagittalSlider");
     const coronalSlider = document.getElementById("coronalSlider");
+
+    // Check if MPR checkbox exists before setting up
+    if (!enableMPRCheckbox) {
+      console.log('MPR checkbox not found - skipping MPR controls setup');
+      return;
+    }
 
     if (enableMPRCheckbox) {
       enableMPRCheckbox.addEventListener("change", function () {

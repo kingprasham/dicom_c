@@ -16,14 +16,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 define('DICOM_VIEWER', true);
 require_once __DIR__ . '/includes/config.php';
 
-$instanceId = $_GET['id'] ?? $_GET['instanceId'] ?? '';
+// Support both 'id' and 'instanceId' parameters
+$instanceId = $_GET['instanceId'] ?? $_GET['id'] ?? '';
 $format = $_GET['format'] ?? 'dicom';
 
 if (empty($instanceId)) {
     http_response_code(400);
     error_log("get_dicom_fast.php: Instance ID missing. GET params: " . json_encode($_GET));
-    die(json_encode(['error' => 'Instance ID required', 'params_received' => array_keys($_GET)]));
+    echo json_encode(['success' => false, 'error' => 'Instance ID required']);
+    exit;
 }
+
+// Log what we received for debugging
+error_log("get_dicom_fast.php: Processing request for instance: $instanceId, format: $format");
 
 // Fetch DICOM file from Orthanc using create-archive
 $orthancUrl = ORTHANC_URL . "/tools/create-archive";

@@ -80,9 +80,9 @@ try {
         }
     }
 
-    // 2. Truncate Database Tables
-    // List of possible tables to clear
-    $tables = [
+    // 2. Clear Database Tables (preserve admin user)
+    // List of tables to truncate completely
+    $tablesToTruncate = [
         'cached_instances',
         'cached_series',
         'cached_studies',
@@ -96,13 +96,13 @@ try {
         'audit_logs',
         'sessions'
     ];
-    
+
     // Disable foreign key checks
     $db->query("SET FOREIGN_KEY_CHECKS = 0");
-    
+
     $truncatedCount = 0;
-    
-    foreach ($tables as $table) {
+
+    foreach ($tablesToTruncate as $table) {
         // Check if table exists first
         $check = $db->query("SHOW TABLES LIKE '$table'");
         if ($check && $check->num_rows > 0) {
@@ -110,7 +110,14 @@ try {
             $truncatedCount++;
         }
     }
-    
+
+    // Handle users table - delete all except admin role
+    $check = $db->query("SHOW TABLES LIKE 'users'");
+    if ($check && $check->num_rows > 0) {
+        $db->query("DELETE FROM users WHERE role != 'admin'");
+        $truncatedCount++;
+    }
+
     // Re-enable foreign key checks
     $db->query("SET FOREIGN_KEY_CHECKS = 1");
     

@@ -211,6 +211,12 @@ body {
     box-shadow: 0 0 15px rgba(45, 90, 160, 0.6) !important;
 }
 
+/* Default active viewport styling */
+#viewport-1 {
+    border: 3px solid #0d6efd !important;
+    box-shadow: 0 0 15px rgba(13, 110, 253, 0.6) !important;
+}
+
 .viewport.mpr-view {
     border: 1px solid var(--medical-accent);
 }
@@ -336,49 +342,39 @@ body {
     transform: translateX(-50%);
 }
 
-/* Mobile-optimized controls */
+/* MPR Controls - Single Row Layout */
 .mpr-controls {
     background-color: var(--bs-tertiary-bg);
     border-bottom: 1px solid var(--bs-border-color);
-    padding: 0.25rem;
+    padding: 4px 8px;
     overflow-x: auto;
-    white-space: nowrap;
+    overflow-y: hidden;
 }
 
-@media (min-width: 768px) {
-    .mpr-controls {
-        padding: 0.5rem;
-        overflow-x: visible;
-        white-space: normal;
-    }
+.mpr-controls .top-controls-bar {
+    min-width: min-content;
 }
 
-/* Mobile controls layout */
+/* Ensure controls stay in one row */
 .mpr-controls .d-flex {
-    flex-wrap: wrap;
-    gap: 0.5rem;
+    flex-wrap: nowrap !important;
+    gap: 8px;
+}
+
+/* Make button groups more compact */
+.mpr-controls .btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
 }
 
 @media (max-width: 767px) {
-    .mpr-controls .d-flex {
-        flex-direction: column;
-        align-items: stretch !important;
+    .mpr-controls {
+        padding: 2px 4px;
     }
-    
-    .mpr-controls .d-flex > div {
-        margin-bottom: 0.5rem;
-    }
-    
-    .mpr-controls .btn-group {
-        width: 100%;
-        justify-content: center;
-    }
-    
-    .mpr-controls .btn-group .btn {
-        flex: 1;
-        min-width: 0;
+
+    .mpr-controls .btn-group-sm .btn {
+        padding: 0.2rem 0.4rem;
         font-size: 0.75rem;
-        padding: 0.375rem 0.25rem;
     }
 }
 

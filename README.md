@@ -1,521 +1,434 @@
-# Hospital DICOM Viewer Pro v2.0 🏥
+# 🏥 Accurate DICOM Viewer Pro
 
-## Production-Ready Medical Imaging System
+<div align="center">
 
-A comprehensive, enterprise-grade DICOM viewing system built for hospital environments, capable of handling 1000+ medical images daily with advanced features, automated backup, and production deployment.
+![Version](https://img.shields.io/badge/version-3.0.0-blue.svg)
+![PHP](https://img.shields.io/badge/PHP-8.0%2B-777BB4?logo=php&logoColor=white)
+![MySQL](https://img.shields.io/badge/MySQL-8.0%2B-4479A1?logo=mysql&logoColor=white)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
+
+**A Professional Medical Imaging Platform for DICOM Studies**
+
+[Features](#-features) • [Installation](#-installation) • [Usage](#-usage) • [Documentation](#-documentation) • [Support](#-support)
+
+</div>
+
+---
+
+## 📋 Overview
+
+Accurate DICOM Viewer Pro is a comprehensive web-based medical imaging platform designed for radiologists, doctors, and medical professionals. Built with modern web technologies, it provides powerful tools for viewing, analyzing, and managing DICOM medical images with enterprise-grade features.
+
+### 🎯 Key Highlights
+
+- **Zero-Installation Web Viewer** - Access from any modern browser
+- **Orthanc PACS Integration** - Seamless connection to PACS servers
+- **Advanced MPR Rendering** - Multi-planar reconstruction for 3D analysis
+- **AI-Powered Analysis** - Integrated Google Gemini AI for preliminary findings
+- **Professional Reporting** - Generate, edit, and print medical reports
+- **Automatic Backups** - Google Drive integration for secure cloud backups
+- **Multi-User System** - Role-based access control (Admin, Doctor, Viewer)
+- **Mobile Responsive** - Touch-optimized interface for tablets and phones
 
 ---
 
 ## ✨ Features
 
-### 🖼️ Advanced DICOM Viewing
-- **Multi-Viewport Layouts** - 1x1, 2x1, 2x2 configurations
-- **MPR (Multi-Planar Reconstruction)** - Axial, Sagittal, Coronal views
-- **Image Manipulation** - Pan, Zoom, Rotate, Flip, Invert
-- **Window/Level Presets** - Lung, Abdomen, Brain, Bone
-- **Cine Mode** - Playback with FPS control
-- **Crosshair Synchronization** - Linked views with reference lines
+### 🖼️ Image Viewing & Manipulation
 
-### 📏 Professional Measurement Tools
-- Length measurement (mm)
-- Angle measurement (degrees)
-- ROI tools (Rectangle, Ellipse, Freehand)
-- Probe tool (Hounsfield units)
-- Persistent storage - Save/load measurements
+- **Cornerstone.js Integration** - High-performance medical image rendering
+- **Multi-Viewport Layouts** - 1x1, 2x2, 3x4, and custom grid layouts
+- **Window/Level Adjustment** - Presets for lung, bone, brain, abdomen
+- **Image Tools** - Pan, zoom, rotate, flip, invert
+- **Measurements** - Length, angle, area (ROI)
+- **Annotations** - Freehand drawing, shapes, text labels
 
-### 📝 Medical Reporting System
-- Professional report templates (CT Head, Chest, Abdomen, MRI, X-Ray)
-- Structured sections (Indication, Technique, Findings, Impression)
-- Version control - Complete audit trail
-- Physician assignment
-- Database storage (NOT files)
+### 🔄 MPR (Multi-Planar Reconstruction)
 
-### 📱 Mobile-Ready
-- Fully responsive Bootstrap 5 design
-- Touch gesture support (Hammer.js)
-- Mobile-optimized controls
-- Tablet-friendly UI
+- **Real-Time 3D Reconstruction** - Axial, Sagittal, Coronal views
+- **Synchronized Viewports** - Cross-reference lines across views
+- **Automatic Orientation** - Intelligent image positioning
+- **Custom MPR Angles** - Free rotation and oblique planes
 
-### 🔄 Automated Systems
-- **Hospital Data Import** - Continuous monitoring of existing DICOM directories
-- **FTP Sync** - Auto-sync to GoDaddy every 2 minutes
-- **Google Drive Backup** - Daily automated backups with 30-day retention
-- **NSSM Windows Services** - Continuous background operations
+### 📝 Reporting System
 
-### 🔐 Security & Compliance
-- Session-based authentication
-- Role-based access control (Admin, Radiologist, Technician, Viewer)
-- HIPAA-compliant audit logging
-- Bcrypt password hashing
-- SQL injection prevention (prepared statements)
+- **Template-Based Reports** - Pre-configured templates for common studies
+- **Rich Text Editor** - Professional report formatting
+- **Report Status Tracking** - Draft, Final, Printed states
+- **Version Control** - Track report modifications
+- **Digital Signatures** - Radiologist authentication
 
-### 🎯 Direct Orthanc Integration
-- **NO database syncing** - Real-time queries via DICOMweb
-- QIDO-RS for study/series queries
-- WADO-RS for image retrieval
-- Always current data
+### 🖨️ Professional Printing (v3.0)
+
+- **Exact Viewport Capture** - Print exactly what you see on screen
+- **One-Time Configuration** - Set print preferences once
+- **Multiple Format Support** - A4, A3, Letter, Legal
+- **Medical Report Templates** - Professional report layouts
+- **Printer Management** - Configure multiple printers
+- **Keyboard Shortcuts** - Ctrl+P to print, Enter to confirm
+
+### 🤖 AI Integration
+
+- **Google Gemini AI** - Preliminary image analysis
+- **Automatic Findings Generation** - AI-suggested impressions
+- **Learning System** - Feedback mechanism for AI improvement
+- **Context-Aware Analysis** - Patient history consideration
+
+### 💾 Data Management
+
+- **Automated Imports** - Monitor folders for auto-import
+- **Batch Processing** - Import multiple studies simultaneously
+- **Google Drive Backup** - Scheduled cloud backups
+- **Local Backups** - Configurable backup retention
+- **Data Synchronization** - Multi-location sync support
+
+### 🔐 Security & Access Control
+
+- **Role-Based Permissions** - Admin, Doctor, Viewer roles
+- **Session Management** - Secure authentication system
+- **Audit Logging** - Track all user actions
+- **HIPAA Considerations** - Privacy-focused architecture
+
+---
+
+## 🚀 Installation
+
+### Prerequisites
+
+- **XAMPP** (or similar): Apache 2.4+, MySQL 8.0+, PHP 8.0+
+- **Orthanc PACS Server** (optional): For DICOM networking
+- **Modern Browser**: Chrome, Firefox, Edge, Safari (latest versions)
+
+### Quick Start
+
+1. **Clone or Download**
+   ```bash
+   git clone https://github.com/yourusername/dicom-viewer-pro.git
+   cd dicom-viewer-pro
+   ```
+
+2. **Database Setup**
+   ```bash
+   # Import the database schema
+   mysql -u root -p < setup/schema_v2_production.sql
+
+   # Or use phpMyAdmin to import the SQL file
+   ```
+
+3. **Configuration**
+   ```bash
+   # Copy and configure environment settings
+   cp includes/config.example.php includes/config.php
+
+   # Edit config.php with your database credentials
+   ```
+
+4. **Set Permissions** (Linux/Mac)
+   ```bash
+   chmod -R 755 assets/uploads
+   chmod -R 755 backups
+   ```
+
+5. **Access the Application**
+   ```
+   http://localhost/papa/dicom_again/claude
+   ```
+
+6. **Default Login**
+   ```
+   Username: admin
+   Password: admin123
+   ```
+   **⚠️ Change this immediately after first login!**
+
+### Orthanc Integration (Optional)
+
+1. Install Orthanc PACS server
+2. Configure in: **Admin → Settings → Orthanc PACS Server**
+3. Default connection:
+   - URL: `http://localhost:8042`
+   - Username: `orthanc`
+   - Password: `orthanc`
+
+---
+
+## 📖 Usage
+
+### For Administrators
+
+#### Initial Setup
+1. Navigate to **Admin → Settings**
+2. Configure Hospital Information
+3. Set up DICOM nodes and printers
+4. Configure Orthanc connection
+5. Set print preferences
+
+#### User Management
+1. Go to **Admin → User Management**
+2. Create user accounts
+3. Assign roles (Admin, Doctor, Viewer)
+
+#### Backup Configuration
+1. **Admin → Settings → Backup**
+2. Configure Google Drive (optional)
+3. Set backup schedule
+4. Test backup functionality
+
+### For Doctors/Radiologists
+
+#### Viewing Studies
+1. Open **Dashboard** or **Studies** page
+2. Search for patient
+3. Click on study to open viewer
+4. Use tools panel for measurements and annotations
+
+#### Creating Reports
+1. Open study in viewer
+2. Click **Create Medical Report**
+3. Fill in clinical information
+4. Add findings and impression
+5. Save as Draft or Finalize
+
+#### Printing
+1. Arrange images in desired layout
+2. Adjust W/L and add annotations
+3. Press **Ctrl+P** or click Print button
+4. Select printer → Press **Enter** or click Print
+
+#### Keyboard Shortcuts
+- **Ctrl+P**: Open print dialog
+- **Enter**: Confirm print
+- **H**: Toggle sidebars
+- **W**: Window/Level tool
+- **Z**: Zoom tool
+- **P**: Pan tool
+
+### For Viewers
+
+- Browse studies
+- View images
+- Export images (if permitted)
+- Cannot create or modify reports
 
 ---
 
 ## 🏗️ Architecture
 
-```
-MRI/CT Scanner → Orthanc (PACS) → DICOMweb API → Web Application
-                                                       ↓
-                                            Hospital PC (XAMPP)
-                                                       ↓
-                                              ┌────────┴────────┐
-                                              ↓                 ↓
-                                         GoDaddy FTP      Google Drive
-                                       (2-min sync)     (Daily backup)
-```
-
 ### Technology Stack
 
-**Backend:**
-- PHP 8.2+ (Vanilla, no frameworks)
-- MySQL 8.0+ (MySQLi)
-- Orthanc 1.11+ with DICOMweb plugin
-- Composer for dependencies
+| Component | Technology |
+|-----------|-----------|
+| **Frontend** | Vanilla JavaScript, Bootstrap 5.3 |
+| **Medical Imaging** | Cornerstone.js, cornerstone-tools |
+| **Backend** | PHP 8.0+, MySQL 8.0+ |
+| **PACS** | Orthanc DICOM Server |
+| **AI** | Google Gemini API |
+| **Cloud Storage** | Google Drive API |
+| **PDF Generation** | jsPDF, html2canvas |
 
-**Frontend:**
-- Vanilla JavaScript ES6+
-- Bootstrap 5.3.3 (Dark theme)
-- Cornerstone Core 2.x
-- Cornerstone WADO Image Loader
-- Cornerstone Tools
-- DICOM Parser
-- Hammer.js (Touch support)
+### Directory Structure
 
-**Services:**
-- NSSM (Windows Services)
-- Apache 2.4 (via XAMPP)
-- MySQL 8.0 (via XAMPP)
-
----
-
-## 📦 What's Included
-
-### Complete Application
-- ✅ Fully functional DICOM viewer
-- ✅ Medical reporting system
-- ✅ Measurement and annotation tools
-- ✅ Clinical notes management
-- ✅ User authentication and authorization
-- ✅ Admin dashboard
-
-### Backend APIs (50+ endpoints)
-- ✅ Authentication (login, logout, session)
-- ✅ DICOMweb proxy (studies, series, instances)
-- ✅ Medical reports (CRUD + versions)
-- ✅ Measurements (CRUD)
-- ✅ Clinical notes (CRUD)
-- ✅ Hospital data import
-- ✅ Automated sync
-- ✅ Google Drive backup
-
-### Automated Systems
-- ✅ Hospital data monitoring service
-- ✅ FTP sync service (to GoDaddy)
-- ✅ Google Drive backup service
-- ✅ NSSM service installer
-
-### Documentation
-- ✅ Production deployment guide
-- ✅ Complete testing checklist (128 tests)
-- ✅ Original system analysis
-- ✅ API documentation
-- ✅ Database schema documentation
-- ✅ Default credentials guide
-
-### Configuration
-- ✅ Orthanc configuration (orthanc.json)
-- ✅ Environment configuration (.env)
-- ✅ Apache configuration (.htaccess)
-- ✅ Composer dependencies
-- ✅ Database schema (SQL)
-
----
-
-## 🚀 Quick Start
-
-### Prerequisites
-- Windows 10/11 or Windows Server
-- XAMPP 8.2+ installed
-- Orthanc with DICOMweb plugin
-- NSSM downloaded
-
-### Installation (5 Steps)
-
-**1. Database Setup**
-```bash
-# Open phpMyAdmin: http://localhost/phpmyadmin
-# Import: setup/schema_v2_production.sql
 ```
-
-**2. Configure Application**
-```bash
-# Edit: config/.env
-# Update database credentials
-# Update Orthanc URL
+dicom-viewer-pro/
+├── admin/              # Admin panel pages
+├── api/                # REST API endpoints
+│   ├── backup/         # Backup system APIs
+│   ├── reports/        # Medical reports APIs
+│   ├── settings/       # Configuration APIs
+│   ├── studies/        # DICOM studies APIs
+│   └── sync/           # Data synchronization
+├── assets/             # Static assets
+│   ├── css/            # Stylesheets
+│   ├── js/             # JavaScript modules
+│   └── uploads/        # User uploads
+├── auth/               # Authentication system
+├── backups/            # Backup storage
+├── database/           # Database migrations
+├── documentation/      # Technical docs
+├── includes/           # PHP includes
+│   └── classes/        # PHP classes
+├── js/                 # Main JavaScript
+│   ├── components/     # UI components
+│   ├── managers/       # Business logic
+│   └── utils/          # Utilities
+├── pages/              # HTML pages
+├── setup/              # Installation scripts
+└── vendor/             # Composer dependencies
 ```
-
-**3. Install Dependencies**
-```bash
-cd C:\xampp\htdocs\papa\dicom_again\claude
-composer install
-```
-
-**4. Install Services**
-```bash
-# Run as Administrator:
-scripts\setup-nssm-services.bat
-```
-
-**5. Access Application**
-```
-http://localhost/papa/dicom_again/claude/
-```
-
-**Default Login:**
-- Username: `admin`
-- Password: `Admin@123`
-
-⚠️ **Change default password immediately!**
-
----
-
-## 📖 Documentation
-
-### Essential Reading
-1. **[PRODUCTION_DEPLOYMENT_GUIDE.md](PRODUCTION_DEPLOYMENT_GUIDE.md)** - Complete deployment instructions
-2. **[TESTING_CHECKLIST.md](TESTING_CHECKLIST.md)** - 128 comprehensive tests
-3. **[setup/DEFAULT_CREDENTIALS.md](setup/DEFAULT_CREDENTIALS.md)** - Login credentials
-
-### Additional Documentation
-- `ORIGINAL_SYSTEM_ANALYSIS.md` - Issues fixed from original system
-- `BUILD_PROGRESS.md` - Development progress tracker
-- `orthanc-config/orthanc.json` - Orthanc configuration
 
 ---
 
 ## 🔧 Configuration
 
-### 1. Hospital Data Import
-**Admin UI → Hospital Data Import**
-- Set hospital DICOM data directory
-- Scan existing files
-- Enable continuous monitoring
-- Auto-imports new files every 30 seconds
+### Environment Variables
 
-### 2. FTP Sync (to GoDaddy)
-**Admin UI → Sync Configuration**
-- Configure FTP credentials
-- Set sync interval (default: 2 minutes)
-- Enable auto-sync
-- Monitor sync history
+Edit `includes/config.php`:
 
-### 3. Google Drive Backup
-**Admin UI → Backup Configuration**
-- Configure Google OAuth credentials
-- Set backup schedule (daily at 2:00 AM)
-- Set retention period (30 days)
-- Enable automated backups
+```php
+<?php
+// Database Configuration
+define('DB_HOST', 'localhost');
+define('DB_USER', 'root');
+define('DB_PASS', '');
+define('DB_NAME', 'dicom_viewer_v2_production');
 
----
+// Application Settings
+define('BASE_PATH', '/papa/dicom_again/claude');
+define('BASE_URL', 'http://localhost' . BASE_PATH);
 
-## 🎯 Key Improvements from Original System
+// Orthanc Configuration
+define('ORTHANC_URL', 'http://localhost:8042');
+define('ORTHANC_USER', 'orthanc');
+define('ORTHANC_PASS', 'orthanc');
 
-### ✅ Fixed Issues
-1. **Path Problems** → Path-agnostic code works on any deployment
-2. **Manual Sync** → Automated NSSM services
-3. **Database Caching** → Direct DICOMweb queries (always fresh)
-4. **No Backup** → Google Drive automated backups
-5. **Security Issues** → Encrypted credentials, prepared statements
-6. **Production Errors** → Comprehensive error handling
-
-### ✨ New Features
-1. Hospital data import with continuous monitoring
-2. Automated FTP sync to GoDaddy
-3. Google Drive backup with retention
-4. NSSM Windows services (auto-start, auto-restart)
-5. Complete audit logging (HIPAA)
-6. Version control for medical reports
-7. Path resolution for any deployment scenario
-
----
-
-## 📊 System Capabilities
-
-- **Daily Capacity:** 1000+ DICOM images
-- **Concurrent Users:** 50+ simultaneous connections
-- **Study Size:** Up to 1000 instances per study
-- **Storage:** Unlimited (Orthanc handles storage)
-- **Backup:** 30-day retention, automated
-- **Sync:** Real-time (2-minute intervals)
-- **Uptime:** 99.9% (with NSSM auto-restart)
-
----
-
-## 🔐 Security Features
-
-### Authentication & Authorization
-- Session-based authentication (8-hour sessions)
-- Role-based access control (4 roles)
-- Bcrypt password hashing (cost: 12)
-- Session timeout and auto-logout
-
-### Data Protection
-- SQL injection prevention (MySQLi prepared statements)
-- XSS prevention (input sanitization)
-- CORS configuration (origin whitelist)
-- Encrypted FTP passwords (AES-256-CBC)
-- HIPAA-compliant audit logs
-
-### Network Security
-- Orthanc accessible localhost only
-- DICOM C-STORE limited to hospital network
-- HTTPS support (optional)
-- Firewall-ready configuration
-
----
-
-## 🧪 Testing
-
-### Test Coverage
-- **128 comprehensive tests** covering:
-  - Authentication (13 tests)
-  - DICOMweb integration (7 tests)
-  - DICOM viewer (40 tests)
-  - MPR (6 tests)
-  - Measurements (9 tests)
-  - Reporting (11 tests)
-  - Clinical notes (6 tests)
-  - Export/Print (4 tests)
-  - Mobile (7 tests)
-  - Hospital import (8 tests)
-  - Sync (7 tests)
-  - Backup (9 tests)
-  - Performance (6 tests)
-  - Security (4 tests)
-  - Deployment (5 tests)
-
-**Run tests:** See `TESTING_CHECKLIST.md`
-
----
-
-## 📁 Project Structure
-
-```
-claude/
-├── api/                    # Backend API endpoints
-│   ├── auth/              # Authentication
-│   ├── dicomweb/          # DICOMweb proxy
-│   ├── reports/           # Medical reports
-│   ├── measurements/      # Measurements
-│   ├── notes/             # Clinical notes
-│   ├── sync/              # Hospital import & FTP sync
-│   └── backup/            # Google Drive backup
-├── admin/                 # Admin UI pages
-├── auth/                  # Authentication pages
-├── assets/                # Static assets
-├── config/                # Configuration (.env)
-├── css/                   # Stylesheets
-├── documentation/         # Original requirements
-├── includes/              # PHP includes
-│   └── classes/           # PHP classes
-├── js/                    # JavaScript files
-│   ├── components/        # UI components
-│   ├── managers/          # Viewport, MPR managers
-│   └── utils/             # Utilities
-├── logs/                  # Application logs
-├── orthanc-config/        # Orthanc configuration
-├── public/                # Public files
-├── scripts/               # Background services
-│   ├── sync-service.php
-│   ├── backup-service.php
-│   ├── data-monitor-service.php
-│   └── setup-nssm-services.bat
-├── setup/                 # Database schema
-├── vendor/                # Composer dependencies
-├── .env                   # Environment config
-├── .htaccess              # Apache config
-├── composer.json          # PHP dependencies
-├── index.php              # Main viewer
-├── dashboard.php          # Dashboard
-├── login.php              # Login page
-└── README.md              # This file
+// Google API (Optional)
+define('GEMINI_API_KEY', 'your-api-key-here');
 ```
 
+### Print Settings
+
+Configure once in **Admin → Settings → Print Settings**:
+
+- **Information**: Patient info, study info, W/L values
+- **Layout**: Paper size, orientation, margins
+- **Quality**: Print quality, color mode
+
 ---
 
-## 🛠️ Maintenance
+## 📚 Documentation
 
-### Daily Tasks
-- Check service status (services.msc)
-- Review error logs (logs/)
-- Verify backup completed
+### User Guides
+- [Quick Start Guide](QUICK_START.md)
+- [Print System Guide](PRINT_SYSTEM_V3_IMPLEMENTATION.md)
+- [Import System](api/sync/QUICK_START.md)
 
-### Weekly Tasks
-- Clean up old sessions
-- Review audit logs
+### Technical Documentation
+- [API Reference](api/sync/SYNC_API_REFERENCE.md)
+- [Database Schema](setup/schema_v2_production.sql)
+- [Architecture Design](documentation/IMPROVED_ARCHITECTURE_DESIGN.md)
+
+### Administration
+- [Deployment Guide](PRODUCTION_DEPLOYMENT_GUIDE.md)
+- [Backup System](BACKUP_SCHEDULER_SETUP.md)
+- [Configuration Checklist](CONFIGURATION_CHECKLIST.md)
+
+---
+
+## 🤝 Support
+
+### Common Issues
+
+**Q: Images not loading?**
+- Check Orthanc connection in settings
+- Verify CORS settings in Orthanc
+- Check browser console for errors
+
+**Q: Print not working?**
+- Ensure popup blocker is disabled
+- Check print settings configuration
+- Verify printer is configured
+
+**Q: AI analysis failing?**
+- Verify Gemini API key is valid
+- Check internet connection
+- Review API quota limits
+
+**Q: Backups not running?**
+- Check cron job configuration
+- Verify Google Drive permissions
 - Check disk space
 
-### Monthly Tasks
-- Archive old data
-- Update software
-- Test disaster recovery
+### Getting Help
 
-### Log Files
-- `logs/app.log` - Application logs
-- `logs/auth.log` - Authentication
-- `logs/sync-service.log` - FTP sync
-- `logs/backup-service.log` - Backups
-- `logs/monitor-service.log` - Data import
+- 📧 **Email**: support@yourcompany.com
+- 🐛 **Bug Reports**: [GitHub Issues](https://github.com/yourusername/dicom-viewer-pro/issues)
+- 📖 **Documentation**: [Wiki](https://github.com/yourusername/dicom-viewer-pro/wiki)
+- 💬 **Discussions**: [Community Forum](https://github.com/yourusername/dicom-viewer-pro/discussions)
 
 ---
 
-## 🆘 Troubleshooting
+## 🛣️ Roadmap
 
-### Images Not Loading
-```bash
-# Check Orthanc
-http://localhost:8042
+### Planned Features
 
-# Restart Orthanc service
-net stop OrthancService
-net start OrthancService
-```
+- [ ] **3D Volume Rendering** - Advanced 3D visualization
+- [ ] **DICOM Print (SCU)** - Direct printing to film printers
+- [ ] **Worklist Integration** - DICOM Modality Worklist
+- [ ] **Mobile Apps** - Native iOS and Android apps
+- [ ] **Telemedicine** - Real-time collaboration tools
+- [ ] **Voice Dictation** - Speech-to-text for reports
+- [ ] **Multi-Language** - Internationalization support
+- [ ] **Dark Mode** - User preference themes
 
-### Sync Not Working
-```bash
-# Check service status
-sc query DicomViewer_FTP_Sync
+---
 
-# Restart service
-net stop DicomViewer_FTP_Sync
-net start DicomViewer_FTP_Sync
+## 📊 System Requirements
 
-# Check logs
-type logs\sync-service.log
-```
+### Minimum Requirements
+- **CPU**: Dual-core processor
+- **RAM**: 4 GB
+- **Storage**: 20 GB free space
+- **Browser**: Chrome 90+, Firefox 88+, Edge 90+
 
-### Database Connection Failed
-```bash
-# Restart MySQL
-net stop MySQL
-net start MySQL
+### Recommended Requirements
+- **CPU**: Quad-core processor or better
+- **RAM**: 8 GB or more
+- **Storage**: 100 GB+ for image storage
+- **Browser**: Latest version of Chrome/Firefox
+- **Network**: 10 Mbps+ for PACS connectivity
 
-# Verify credentials in config/.env
-```
+---
 
-See `PRODUCTION_DEPLOYMENT_GUIDE.md` for complete troubleshooting.
+## 🔒 Security Considerations
+
+- Change default admin credentials immediately
+- Use HTTPS in production environments
+- Configure firewall rules for Orthanc
+- Regular database backups
+- Keep software dependencies updated
+- Implement audit logging review
+- Consider HIPAA compliance requirements
 
 ---
 
 ## 📝 License
 
-Proprietary - Hospital DICOM Viewer Pro v2.0
-Copyright © 2025 - All Rights Reserved
-
-This software is licensed for use in medical facilities only.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
-## 👥 Support
+## 🙏 Acknowledgments
 
-### Documentation
-- Production Deployment Guide
-- Testing Checklist
-- API Documentation
-- Database Schema
+### Technologies & Libraries
 
-### Logs
-Check logs/ directory for all service logs
+- [Cornerstone.js](https://cornerstonejs.org/) - Medical imaging rendering
+- [Orthanc](https://www.orthanc-server.com/) - DICOM server
+- [Bootstrap](https://getbootstrap.com/) - UI framework
+- [Google Gemini](https://ai.google.dev/) - AI integration
+- [jsPDF](https://github.com/parallax/jsPDF) - PDF generation
+- [PHPUnit](https://phpunit.de/) - Testing framework
 
-### Database
-- Database: `dicom_viewer_v2_production`
-- Default users in: `setup/DEFAULT_CREDENTIALS.md`
+### Contributors
 
----
-
-## 🎓 Training Resources
-
-### For Administrators
-1. Read: `PRODUCTION_DEPLOYMENT_GUIDE.md`
-2. Complete: `TESTING_CHECKLIST.md`
-3. Configure: Hospital Data Import, Sync, Backup
-
-### For Radiologists
-1. Login to system
-2. Navigate patient/study list
-3. Open study in viewer
-4. Use measurement tools
-5. Create medical reports
-
-### For Technicians
-1. Upload DICOM files
-2. Verify reception in Orthanc
-3. Check sync status
-4. Monitor services
-
----
-
-## ✅ Production Readiness
-
-This system is **production-ready** with:
-
-- ✅ Complete feature set
-- ✅ Automated backup and sync
-- ✅ Comprehensive error handling
-- ✅ Security hardening
-- ✅ Performance optimization
-- ✅ Detailed logging
-- ✅ Complete documentation
-- ✅ 128 test cases
-- ✅ Path-agnostic deployment
-- ✅ HIPAA compliance features
-
----
-
-## 🚀 Next Steps
-
-1. **Review Documentation**
-   - Read PRODUCTION_DEPLOYMENT_GUIDE.md
-   - Review TESTING_CHECKLIST.md
-
-2. **Deploy Application**
-   - Install XAMPP and Orthanc
-   - Import database schema
-   - Configure environment
-   - Install NSSM services
-
-3. **Configure Systems**
-   - Set hospital data path
-   - Configure FTP sync
-   - Setup Google Drive backup
-
-4. **Test Thoroughly**
-   - Run all 128 tests
-   - Verify with real DICOM data
-   - Test on mobile devices
-
-5. **Go Live**
-   - Train hospital staff
-   - Configure MRI/CT machines
-   - Monitor for 1 week
-   - Full production release
+Built with ❤️ by medical imaging professionals for the healthcare community.
 
 ---
 
 ## 📞 Contact
 
-For technical support or questions about deployment, refer to the documentation files or check the logs directory for troubleshooting information.
+**Project Maintainer**: Your Name
+- Website: https://yourcompany.com
+- Email: admin@yourcompany.com
+- LinkedIn: [Your Profile](https://linkedin.com/in/yourprofile)
 
 ---
 
-**Hospital DICOM Viewer Pro v2.0** - Built with ❤️ for healthcare professionals
+<div align="center">
 
-**Version:** 2.0.0
-**Status:** ✅ Production Ready
-**Last Updated:** November 22, 2025
+**⭐ Star this repository if you find it helpful!**
+
+Made with ❤️ for better healthcare
+
+[⬆ Back to Top](#-accurate-dicom-viewer-pro)
+
+</div>

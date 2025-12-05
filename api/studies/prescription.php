@@ -212,27 +212,33 @@ function migrateDatabase($db) {
     
     // Step 2: CRITICAL - Remove ALL foreign key constraints that might cause issues
     // This fixes "Cannot add or update a child row: a foreign key constraint fails"
+    // IMPROVED: Only drop foreign keys that actually exist to avoid errors
     $foreignKeys = getForeignKeys($db, $tableName);
-    
+
     foreach ($foreignKeys as $fkName) {
-        // Drop the foreign key constraint
+        // Only drop if it exists (getForeignKeys already verified this)
         $dropFk = "ALTER TABLE `$tableName` DROP FOREIGN KEY `$fkName`";
-        @$db->query($dropFk);
-        error_log("Dropped foreign key: $fkName");
+        if ($db->query($dropFk)) {
+            error_log("Dropped foreign key: $fkName");
+        }
     }
-    
-    // Also try to drop commonly named foreign keys that might exist
+
+    // Also try to drop commonly named foreign keys that might exist (with explicit checking)
     $commonFkNames = [
         'prescriptions_ibfk_1',
-        'prescriptions_ibfk_2', 
+        'prescriptions_ibfk_2',
         'fk_prescriptions_user',
         'fk_user',
         'fk_created_by',
         'fk_prescribed_by'
     ];
-    
+
     foreach ($commonFkNames as $fkName) {
-        @$db->query("ALTER TABLE `$tableName` DROP FOREIGN KEY `$fkName`");
+        // Only drop if it exists to prevent "Can't DROP FOREIGN KEY" error
+        if (foreignKeyExists($db, $tableName, $fkName)) {
+            $db->query("ALTER TABLE `$tableName` DROP FOREIGN KEY `$fkName`");
+            error_log("Dropped common foreign key: $fkName");
+        }
     }
     
     // Step 3: Ensure all required columns exist

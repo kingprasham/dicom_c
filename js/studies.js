@@ -496,6 +496,40 @@ function switchToReport(index) {
 
 function displayReport(report) {
     const contentDiv = document.getElementById('reportContent');
+
+    // Parse findings if it's a string with subsections
+    let findingsHtml = '';
+    const findings = report.findings || '';
+
+    if (findings) {
+        // Split by double newlines to get sections
+        const findingsParts = findings.split(/\n\s*\n/);
+        findingsParts.forEach(part => {
+            const separatorIndex = part.indexOf(':');
+            // Check if this part has a key:value format
+            if (separatorIndex > 0 && separatorIndex < 50) {
+                const key = part.substring(0, separatorIndex);
+                const value = part.substring(separatorIndex + 1).trim();
+                findingsHtml += `
+                    <div style="margin-bottom: 15px;">
+                        <strong>${escapeHtml(key)}:</strong>
+                        <p style="margin: 5px 0 0 0; color: var(--text-secondary);">${escapeHtml(value).replace(/\n/g, '<br>')}</p>
+                    </div>
+                `;
+            } else {
+                findingsHtml += `<p>${escapeHtml(part).replace(/\n/g, '<br>')}</p>`;
+            }
+        });
+    } else {
+        findingsHtml = '<p style="color: var(--text-secondary);">No findings reported</p>';
+    }
+
+    // Determine which doctor name to display - check multiple possible fields
+    const doctorName = report.reporting_physician_name ||
+                      report.reporting_physician ||
+                      report.created_by_name ||
+                      'Not specified';
+
     contentDiv.innerHTML = `
         <div class="report-card">
             <div class="report-header">
@@ -519,7 +553,7 @@ function displayReport(report) {
 
             <div class="report-section">
                 <h6><i class="bi bi-search"></i> Findings</h6>
-                <p style="white-space: pre-wrap;">${escapeHtml(report.findings || 'No findings reported')}</p>
+                ${findingsHtml}
             </div>
 
             <div class="report-section">
@@ -527,9 +561,15 @@ function displayReport(report) {
                 <p style="white-space: pre-wrap;">${escapeHtml(report.impression || 'No impression provided')}</p>
             </div>
 
-            <div class="report-section">
-                <h6><i class="bi bi-info-circle"></i> Status</h6>
-                <p><span class="badge ${report.status === 'final' ? 'badge-success' : 'badge-warning'}">${report.status || 'draft'}</span></p>
+            <div class="report-footer" style="margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <span style="color: var(--text-secondary); font-size: 0.9em;">Reporting Physician:</span>
+                    <span style="font-weight: 500; margin-left: 10px;">${escapeHtml(doctorName)}</span>
+                </div>
+                <div>
+                    <span style="color: var(--text-secondary); font-size: 0.9em;">Status:</span>
+                    <span class="badge ${report.status === 'final' ? 'badge-success' : 'badge-warning'}" style="margin-left: 10px;">${report.status || 'draft'}</span>
+                </div>
             </div>
         </div>
     `;

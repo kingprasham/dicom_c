@@ -205,7 +205,142 @@ try {
                     'paths_checked' => $pathsChecked
                 ]);
                 break;
-                
+
+            case 'sync_missing_files':
+                // Scan for DICOM files and import those not in database
+                $result = $db->query("SELECT id, path, name FROM monitored_paths WHERE is_active = 1");
+
+                if ($result->num_rows === 0) {
+                    echo json_encode(['success' => false, 'error' => 'No monitored paths configured']);
+                    exit;
+                }
+
+                $allDicomFiles = [];
+                $pathsScanned = 0;
+
+                while ($row = $result->fetch_assoc()) {
+                    $path = $row['path'];
+
+                    if (!is_dir($path)) {
+                        continue;
+                    }
+
+                    $pathsScanned++;
+                    scanDicomFilesRecursive($path, $allDicomFiles);
+                }
+
+                // Filter out files that are already imported
+                $newFiles = [];
+                foreach ($allDicomFiles as $file) {
+                    $stmt = $db->prepare("SELECT id FROM imported_studies WHERE file_path = ?");
+                    $stmt->bind_param('s', $file['path']);
+                    $stmt->execute();
+                    $exists = $stmt->get_result()->fetch_assoc();
+                    $stmt->close();
+
+                    if (!$exists) {
+                        $newFiles[] = $file;
+                    }
+                }
+
+                echo json_encode([
+                    'success' => true,
+                    'total_files_found' => count($allDicomFiles),
+                    'new_files' => count($newFiles),
+                    'paths_scanned' => $pathsScanned,
+                    'files' => array_slice($newFiles, 0, 100) // Return first 100 for preview
+                ]);
+                break;
+
+            case 'import_missing_files':
+                // Import all missing DICOM files from monitored paths
+                set_time_limit(3600); // 1 hour for large imports
+
+                $result = $db->query("SELECT id, path, name FROM monitored_paths WHERE is_active = 1");
+
+                if ($result->num_rows === 0) {
+                    echo json_encode(['success' => false, 'error' => 'No monitored paths configured']);
+                    exit;
+                }
+
+                $allDicomFiles = [];
+
+                while ($row = $result->fetch_assoc()) {
+                    $path = $row['path'];
+                    if (is_dir($path)) {
+                        scanDicomFilesRecursive($path, $allDicomFiles);
+                    }
+                }
+
+                // Create batch ID
+                $batchId = 'AUTO_SYNC_' . date('Ymd_His');
+
+                $importedCount = 0;
+                $skippedCount = 0;
+                $errorCount = 0;
+
+                foreach ($allDicomFiles as $file) {
+                    // Check if already imported
+                    $stmt = $db->prepare("SELECT id FROM imported_studies WHERE file_path = ?");
+                    $stmt->bind_param('s', $file['path']);
+                    $stmt->execute();
+                    $exists = $stmt->get_result()->fetch_assoc();
+                    $stmt->close();
+
+                    if ($exists) {
+                        $skippedCount++;
+                        continue;
+                    }
+
+                    try {
+                        // Upload to Orthanc
+                        $uploadResult = uploadToOrthanc($file['path']);
+
+                        if ($uploadResult['success']) {
+                            // Record import
+                            $stmt = $db->prepare("
+                                INSERT INTO imported_studies
+                                (import_batch_id, file_path, patient_id, patient_name, study_uid,
+                                 study_date, modality, orthanc_id, file_size_bytes, backup_status)
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
+                            ");
+
+                            $stmt->bind_param('ssssssssi',
+                                $batchId,
+                                $file['path'],
+                                $uploadResult['patient_id'],
+                                $uploadResult['patient_name'],
+                                $uploadResult['study_uid'],
+                                $uploadResult['study_date'],
+                                $uploadResult['modality'],
+                                $uploadResult['orthanc_id'],
+                                $file['size']
+                            );
+
+                            $stmt->execute();
+                            $stmt->close();
+                            $importedCount++;
+                        } else {
+                            $errorCount++;
+                        }
+                    } catch (Exception $e) {
+                        $errorCount++;
+                    }
+
+                    // Small delay to prevent overload
+                    usleep(50000); // 0.05 seconds
+                }
+
+                echo json_encode([
+                    'success' => true,
+                    'batch_id' => $batchId,
+                    'total_files' => count($allDicomFiles),
+                    'imported' => $importedCount,
+                    'skipped' => $skippedCount,
+                    'errors' => $errorCount
+                ]);
+                break;
+
             default:
                 echo json_encode(['success' => false, 'error' => 'Invalid action']);
         }
@@ -335,4 +470,104 @@ try {
 } catch (Exception $e) {
     http_response_code(500);
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+}
+
+/**
+ * Recursively scan directory for DICOM files
+ */
+function scanDicomFilesRecursive($dir, &$files) {
+    $items = @scandir($dir);
+    if ($items === false) return;
+
+    foreach ($items as $item) {
+        if ($item === '.' || $item === '..') continue;
+
+        $path = $dir . DIRECTORY_SEPARATOR . $item;
+
+        if (is_dir($path)) {
+            scanDicomFilesRecursive($path, $files);
+        } elseif (is_file($path)) {
+            // Simple DICOM detection
+            $handle = @fopen($path, 'rb');
+            if ($handle) {
+                fseek($handle, 128);
+                $marker = fread($handle, 4);
+                fclose($handle);
+
+                if ($marker === 'DICM' || strtolower(pathinfo($path, PATHINFO_EXTENSION)) === 'dcm') {
+                    $files[] = [
+                        'path' => $path,
+                        'name' => basename($path),
+                        'size' => filesize($path)
+                    ];
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Upload DICOM file to Orthanc
+ */
+function uploadToOrthanc($filepath) {
+    try {
+        $fileContent = @file_get_contents($filepath);
+        if ($fileContent === false) {
+            return ['success' => false, 'error' => 'Failed to read file'];
+        }
+
+        $ch = curl_init(ORTHANC_URL . '/instances');
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $fileContent);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_USERPWD, ORTHANC_USERNAME . ':' . ORTHANC_PASSWORD);
+        curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/dicom']);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($ch);
+        curl_close($ch);
+
+        if ($httpCode === 200 && $response) {
+            $data = json_decode($response, true);
+
+            if (!$data || !isset($data['ID'])) {
+                return ['success' => false, 'error' => 'Invalid Orthanc response'];
+            }
+
+            $instanceId = $data['ID'];
+
+            // Get patient and study info
+            $ch = curl_init(ORTHANC_URL . '/instances/' . $instanceId . '/tags?simplify');
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_USERPWD, ORTHANC_USERNAME . ':' . ORTHANC_PASSWORD);
+            curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+
+            $tagsResponse = curl_exec($ch);
+            curl_close($ch);
+
+            $tags = json_decode($tagsResponse, true);
+
+            return [
+                'success' => true,
+                'orthanc_id' => $instanceId,
+                'patient_id' => $tags['PatientID'] ?? 'UNKNOWN',
+                'patient_name' => $tags['PatientName'] ?? 'UNKNOWN',
+                'study_uid' => $tags['StudyInstanceUID'] ?? '',
+                'study_date' => $tags['StudyDate'] ?? null,
+                'modality' => $tags['Modality'] ?? 'OT'
+            ];
+        } else {
+            return [
+                'success' => false,
+                'error' => $curlError ?: "HTTP $httpCode"
+            ];
+        }
+    } catch (Exception $e) {
+        return ['success' => false, 'error' => $e->getMessage()];
+    }
 }

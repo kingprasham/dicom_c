@@ -377,6 +377,149 @@ $detectedIP = getLocalIPAddress();
                 </div>
             </div>
 
+            <!-- Print Settings -->
+            <div class="settings-card" id="print-settings">
+                <div class="category-header d-flex justify-content-between">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-printer-fill category-icon"></i>
+                        <h4 class="mb-0 text-white">Print Settings</h4>
+                    </div>
+                    <button type="button" class="btn btn-success btn-sm" id="savePrintSettingsBtn">
+                        <i class="bi bi-check-circle"></i> Save Print Settings
+                    </button>
+                </div>
+
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <strong>Configure once, print consistently:</strong> These settings will be applied to all prints across the system.
+                    Doctors can simply click print without configuring each time.
+                </div>
+
+                <form id="printSettingsForm">
+                    <!-- Include Information Section -->
+                    <div class="mb-4">
+                        <h6 class="text-primary mb-3">
+                            <i class="bi bi-card-text me-2"></i>Information to Include on Prints
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-check form-switch mb-2">
+                                    <input class="form-check-input" type="checkbox" id="printIncludePatientInfo" name="includePatientInfo" checked>
+                                    <label class="form-check-label text-light" for="printIncludePatientInfo">
+                                        <i class="bi bi-person-badge me-2 text-info"></i>Patient Information
+                                    </label>
+                                </div>
+                                <div class="form-check form-switch mb-2">
+                                    <input class="form-check-input" type="checkbox" id="printIncludeStudyInfo" name="includeStudyInfo" checked>
+                                    <label class="form-check-label text-light" for="printIncludeStudyInfo">
+                                        <i class="bi bi-file-medical me-2 text-success"></i>Study Information
+                                    </label>
+                                </div>
+                                <div class="form-check form-switch mb-2">
+                                    <input class="form-check-input" type="checkbox" id="printIncludeInstitutionInfo" name="includeInstitutionInfo" checked>
+                                    <label class="form-check-label text-light" for="printIncludeInstitutionInfo">
+                                        <i class="bi bi-hospital me-2 text-primary"></i>Hospital/Institution Info
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check form-switch mb-2">
+                                    <input class="form-check-input" type="checkbox" id="printIncludeAnnotations" name="includeAnnotations" checked>
+                                    <label class="form-check-label text-light" for="printIncludeAnnotations">
+                                        <i class="bi bi-pencil-square me-2 text-warning"></i>Annotations & Shapes
+                                    </label>
+                                </div>
+                                <div class="form-check form-switch mb-2">
+                                    <input class="form-check-input" type="checkbox" id="printIncludeWindowLevel" name="includeWindowLevel" checked>
+                                    <label class="form-check-label text-light" for="printIncludeWindowLevel">
+                                        <i class="bi bi-sliders me-2 text-success"></i>Window/Level Values
+                                    </label>
+                                </div>
+                                <div class="form-check form-switch mb-2">
+                                    <input class="form-check-input" type="checkbox" id="printIncludeMeasurements" name="includeMeasurements" checked>
+                                    <label class="form-check-label text-light" for="printIncludeMeasurements">
+                                        <i class="bi bi-rulers me-2 text-danger"></i>Measurements
+                                    </label>
+                                </div>
+                                <div class="form-check form-switch mb-2">
+                                    <input class="form-check-input" type="checkbox" id="printIncludeTimestamp" name="includeTimestamp" checked>
+                                    <label class="form-check-label text-light" for="printIncludeTimestamp">
+                                        <i class="bi bi-clock me-2 text-info"></i>Timestamp
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Page Layout Section -->
+                    <div class="mb-4">
+                        <h6 class="text-primary mb-3">
+                            <i class="bi bi-layout-text-window me-2"></i>Page Layout
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label text-light">Paper Size</label>
+                                <select class="form-select" id="printPaperSize" name="paperSize">
+                                    <option value="A4" selected>A4 (210 × 297 mm)</option>
+                                    <option value="A3">A3 (297 × 420 mm)</option>
+                                    <option value="Letter">Letter (8.5 × 11 in)</option>
+                                    <option value="Legal">Legal (8.5 × 14 in)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label text-light">Orientation</label>
+                                <select class="form-select" id="printOrientation" name="orientation">
+                                    <option value="landscape" selected>Landscape</option>
+                                    <option value="portrait">Portrait</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label text-light">Margins</label>
+                                <select class="form-select" id="printMargins" name="margins">
+                                    <option value="none">None</option>
+                                    <option value="narrow">Narrow (5mm)</option>
+                                    <option value="normal" selected>Normal (10mm)</option>
+                                    <option value="wide">Wide (20mm)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Output Quality Section -->
+                    <div class="mb-4">
+                        <h6 class="text-primary mb-3">
+                            <i class="bi bi-image me-2"></i>Output Quality
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label text-light">Print Quality</label>
+                                <select class="form-select" id="printQuality" name="quality">
+                                    <option value="draft">Draft (Fast, Lower Quality)</option>
+                                    <option value="normal">Normal</option>
+                                    <option value="high" selected>High Quality (Recommended)</option>
+                                    <option value="maximum">Maximum (Slow, Best Quality)</option>
+                                </select>
+                                <small class="form-text text-muted">Higher quality = slower processing but better output</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label text-light">Color Mode</label>
+                                <select class="form-select" id="printColorMode" name="colorMode">
+                                    <option value="grayscale" selected>Grayscale (Medical Standard)</option>
+                                    <option value="color">Color</option>
+                                    <option value="inverted">Inverted Grayscale</option>
+                                </select>
+                                <small class="form-text text-muted">Grayscale is standard for medical imaging</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-success">
+                        <i class="bi bi-check-circle-fill me-2"></i>
+                        <strong>Tip:</strong> These settings ensure consistent professional prints every time without having to reconfigure.
+                    </div>
+                </form>
+            </div>
+
             <!-- Advanced Settings -->
             <div class="settings-card">
                 <div class="category-header">
@@ -522,11 +665,12 @@ $detectedIP = getLocalIPAddress();
         document.addEventListener('DOMContentLoaded', () => {
             nodeModal = new bootstrap.Modal(document.getElementById('nodeModal'));
             printerModal = new bootstrap.Modal(document.getElementById('printerModal'));
-            
+
             loadSettings();
             loadNodes();
             loadPrinters();
             loadCurrentLogo();
+            loadPrintSettings(); // Load print settings
             setupEventListeners();
         });
 
@@ -981,11 +1125,98 @@ $detectedIP = getLocalIPAddress();
             }
         }
 
+        // --- Print Settings Management ---
+        async function loadPrintSettings() {
+            try {
+                const response = await fetch(`${basePath}/api/settings/print-settings.php`);
+                const data = await response.json();
+
+                if (data.success && data.settings) {
+                    const settings = data.settings;
+
+                    // Populate checkboxes
+                    document.getElementById('printIncludePatientInfo').checked = settings.includePatientInfo !== false;
+                    document.getElementById('printIncludeStudyInfo').checked = settings.includeStudyInfo !== false;
+                    document.getElementById('printIncludeInstitutionInfo').checked = settings.includeInstitutionInfo !== false;
+                    document.getElementById('printIncludeAnnotations').checked = settings.includeAnnotations !== false;
+                    document.getElementById('printIncludeWindowLevel').checked = settings.includeWindowLevel !== false;
+                    document.getElementById('printIncludeMeasurements').checked = settings.includeMeasurements !== false;
+                    document.getElementById('printIncludeTimestamp').checked = settings.includeTimestamp !== false;
+
+                    // Populate selects
+                    document.getElementById('printPaperSize').value = settings.paperSize || 'A4';
+                    document.getElementById('printOrientation').value = settings.orientation || 'landscape';
+                    document.getElementById('printMargins').value = settings.margins || 'normal';
+                    document.getElementById('printQuality').value = settings.quality || 'high';
+                    document.getElementById('printColorMode').value = settings.colorMode || 'grayscale';
+                }
+            } catch (error) {
+                console.error('Error loading print settings:', error);
+            }
+        }
+
+        async function savePrintSettings() {
+            const settings = {
+                includePatientInfo: document.getElementById('printIncludePatientInfo').checked,
+                includeStudyInfo: document.getElementById('printIncludeStudyInfo').checked,
+                includeInstitutionInfo: document.getElementById('printIncludeInstitutionInfo').checked,
+                includeAnnotations: document.getElementById('printIncludeAnnotations').checked,
+                includeWindowLevel: document.getElementById('printIncludeWindowLevel').checked,
+                includeMeasurements: document.getElementById('printIncludeMeasurements').checked,
+                includeTimestamp: document.getElementById('printIncludeTimestamp').checked,
+                paperSize: document.getElementById('printPaperSize').value,
+                orientation: document.getElementById('printOrientation').value,
+                margins: document.getElementById('printMargins').value,
+                quality: document.getElementById('printQuality').value,
+                colorMode: document.getElementById('printColorMode').value
+            };
+
+            try {
+                const btn = document.getElementById('savePrintSettingsBtn');
+                btn.disabled = true;
+                btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Saving...';
+
+                const response = await fetch(`${basePath}/api/settings/print-settings.php`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(settings)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> Saved!';
+                    btn.classList.remove('btn-success');
+                    btn.classList.add('btn-success', 'border-success');
+
+                    setTimeout(() => {
+                        btn.innerHTML = '<i class="bi bi-check-circle"></i> Save Print Settings';
+                        btn.classList.remove('border-success');
+                        btn.disabled = false;
+                    }, 2000);
+
+                    showSuccess('Print settings saved successfully!');
+                } else {
+                    throw new Error(data.error || 'Failed to save settings');
+                }
+            } catch (error) {
+                alert('Error saving print settings: ' + error.message);
+                const btn = document.getElementById('savePrintSettingsBtn');
+                btn.innerHTML = '<i class="bi bi-x-circle"></i> Save Failed';
+                btn.disabled = false;
+
+                setTimeout(() => {
+                    btn.innerHTML = '<i class="bi bi-check-circle"></i> Save Print Settings';
+                }, 2000);
+            }
+        }
+
         function setupEventListeners() {
             document.getElementById('saveAllBtn').addEventListener('click', saveAllSettings);
             document.getElementById('testOrthancBtn').addEventListener('click', testOrthancConnection);
             document.getElementById('saveOrthancConfigBtn').addEventListener('click', saveOrthancConfiguration);
-            
+            document.getElementById('savePrintSettingsBtn').addEventListener('click', savePrintSettings);
+
             // Logo upload handler
             document.getElementById('hospitalLogoInput').addEventListener('change', handleLogoUpload);
         }

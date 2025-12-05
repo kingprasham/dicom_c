@@ -424,49 +424,33 @@ $userRole = $_SESSION['role'] ?? 'viewer';
                 </span>
             </div>
             <div class="d-flex align-items-center gap-2 ms-auto">
-                <form id="uploadForm" enctype="multipart/form-data" class="m-0">
-                    <div class="btn-group">
-                        <label for="dicomFolderInput" class="btn btn-primary" style="cursor: pointer;">
-                            <i class="bi bi-folder2-open me-2"></i>Open Folder
-                        </label>
-                        <button class="btn btn-primary dropdown-toggle dropdown-toggle-split"
-                            data-bs-toggle="dropdown"></button>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="#" id="uploadFolder">Folder (Default)</a></li>
-                            <li>
-                                <hr class="dropdown-divider">
-                            </li>
-                            <li><a class="dropdown-item" href="#" id="uploadSeries">Select Multiple Files</a></li>
-                            <li><a class="dropdown-item" href="#" id="uploadSingle">Select Single File</a></li>
-                        </ul>
-                    </div>
-
+                <form id="uploadForm" enctype="multipart/form-data" class="m-0" style="display: none;">
                     <input type="file" id="dicomFileInput" name="dicomFile" class="d-none" accept=".dcm,.dicom"
                         multiple>
                     <input type="file" id="dicomFolderInput" name="dicomFolder" class="d-none" webkitdirectory directory
                         multiple>
                 </form>
                 <div class="btn-group">
-                    <button class="btn btn-secondary" id="exportBtn"><i class="bi bi-download me-2"></i>Export</button>
-                    <button class="btn btn-secondary dropdown-toggle dropdown-toggle-split"
+                    <button class="btn btn-primary" id="exportBtn"><i class="bi bi-download me-2"></i>Export</button>
+                    <button class="btn btn-primary dropdown-toggle dropdown-toggle-split"
                         data-bs-toggle="dropdown"></button>
                     <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="#" id="exportImage">Export as Image</a></li>
-                        <li><a class="dropdown-item" href="#" id="exportPDF"><i class="bi bi-file-pdf me-2"></i>Download as PDF</a></li>
-                        <li><a class="dropdown-item" href="#" id="exportReport">Export Report</a></li>
-                        <li><a class="dropdown-item" href="#" id="exportDicom">Export DICOM</a></li>
-                        <li><a class="dropdown-item" href="#" id="exportMPR">Export MPR Views</a></li>
+                        <li><a class="dropdown-item" href="#" id="exportImage"><i class="bi bi-file-image me-2"></i>Export as Image</a></li>
+                        <li><a class="dropdown-item" href="#" id="exportPDF"><i class="bi bi-file-pdf me-2"></i>Export as PDF</a></li>
+                        <li><a class="dropdown-item" href="#" id="exportDicom"><i class="bi bi-file-earmark-medical me-2"></i>Export DICOM</a></li>
+                        <li><a class="dropdown-item" href="#" id="exportMPR"><i class="bi bi-grid-3x3 me-2"></i>Export MPR Views</a></li>
                         <li>
                             <hr class="dropdown-divider">
                         </li>
                         <li><a class="dropdown-item" href="#" id="createMedicalReport">
                                 <i class="bi bi-file-medical me-2"></i>Create Medical Report
                             </a></li>
+                        <li><a class="dropdown-item" href="#" id="exportReport"><i class="bi bi-file-text me-2"></i>Export Report</a></li>
                     </ul>
                 </div>
-                <button class="btn btn-secondary" id="printBtn" title="Print DICOM Image"><i class="bi bi-printer"></i></button>
-                <button class="btn btn-secondary" id="settingsBtn"><i class="bi bi-gear"></i></button>
-                <button class="btn btn-secondary" id="fullscreenBtn"><i class="bi bi-arrows-fullscreen"></i></button>
+                <button class="btn btn-secondary" id="printBtn" title="Print DICOM Image"><i class="bi bi-printer me-1"></i>Print</button>
+                <button class="btn btn-secondary" id="settingsBtn" title="Settings"><i class="bi bi-gear me-1"></i>Settings</button>
+                <button class="btn btn-secondary" id="fullscreenBtn" title="Fullscreen"><i class="bi bi-arrows-fullscreen"></i></button>
             </div>
         </div>
     </header>
@@ -479,12 +463,6 @@ $userRole = $_SESSION['role'] ?? 'viewer';
             <div class="sidebar-section"
                 style="padding: 1rem; flex-shrink: 0; border-bottom: 1px solid var(--bs-border-color);">
                 <h6 class="text-light mb-2">Series Navigation</h6>
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="enableMPR" checked>
-                    <label class="form-check-label small text-success" for="enableMPR">
-                        <i class="bi bi-layers"></i> Enable MPR Views
-                    </label>
-                </div>
             </div>
 
             <div class="series-list-container" id="series-list">
@@ -505,27 +483,6 @@ $userRole = $_SESSION['role'] ?? 'viewer';
                     </button>
                 </div>
                 <input type="range" class="form-range" id="imageSlider" min="0" max="0" value="0">
-
-                <div class="mt-2" id="mprNavigation" style="display: none;">
-                    <small class="text-success">MPR Slice Control</small>
-                    <div class="row g-1 mt-1">
-                        <div class="col-4">
-                            <small class="text-muted d-block">Axial</small>
-                            <input type="range" class="form-range form-range-sm" id="axialSlider" min="0" max="100"
-                                value="50">
-                        </div>
-                        <div class="col-4">
-                            <small class="text-muted d-block">Sagittal</small>
-                            <input type="range" class="form-range form-range-sm" id="sagittalSlider" min="0" max="100"
-                                value="50">
-                        </div>
-                        <div class="col-4">
-                            <small class="text-muted d-block">Coronal</small>
-                            <input type="range" class="form-range form-range-sm" id="coronalSlider" min="0" max="100"
-                                value="50">
-                        </div>
-                    </div>
-                </div>
             </div>
 
             <div class="sidebar-section fixed-section cine-section">
@@ -547,68 +504,27 @@ $userRole = $_SESSION['role'] ?? 'viewer';
         <main id="main-content" class="d-flex flex-column" style="background-color: #000;">
             <div class="mpr-controls">
                 <div class="top-controls-bar">
-                    <div class="controls-group-left">
-                        <div class="control-group">
-                            <span class="control-label">Layout:</span>
-                            <div class="btn-group" role="group">
-                                <button type="button" class="btn btn-sm btn-secondary" data-layout="1x1"><i
-                                        class="bi bi-app"></i></button>
-                                <button type="button" class="btn btn-sm btn-primary" data-layout="2x2"><i
-                                        class="bi bi-grid-fill"></i></button>
-                                <button type="button" class="btn btn-sm btn-secondary" data-layout="2x1"><i
-                                        class="bi bi-layout-split"></i></button>
-                            </div>
+                    <div class="d-flex justify-content-center align-items-center w-100" style="gap: 8px; flex-wrap: nowrap; overflow-x: auto; padding: 4px 8px;">
+                        <!-- Layout buttons -->
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button type="button" class="btn btn-secondary" data-layout="1x1" title="1x1"><i class="bi bi-app"></i></button>
+                            <button type="button" class="btn btn-primary" data-layout="2x2" title="2x2"><i class="bi bi-grid-fill"></i></button>
+                            <button type="button" class="btn btn-secondary" data-layout="2x1" title="2x1"><i class="bi bi-layout-split"></i></button>
+                            <button type="button" class="btn btn-info" id="customGridBtn" title="Custom Grid"><i class="bi bi-grid-3x3-gap"></i></button>
                         </div>
-                        <div class="control-group">
-                            <span class="control-label">MPR:</span>
-                            <div class="btn-group" role="group">
-                                <button type="button" class="btn btn-sm btn-outline-success"
-                                    id="mprAxial">Axial</button>
-                                <button type="button" class="btn btn-sm btn-outline-success"
-                                    id="mprSagittal">Sagittal</button>
-                                <button type="button" class="btn btn-sm btn-outline-success"
-                                    id="mprCoronal">Coronal</button>
-                                <button type="button" class="btn btn-sm btn-outline-success" id="mprAll">All
-                                    Views</button>
-                            </div>
-                        </div>
-                        <div class="control-group">
-                            <span class="control-label">Sync:</span>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="checkbox" id="stackScroll" checked>
-                                <label class="form-check-label small" for="stackScroll">Stack Scroll</label>
-                            </div>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="checkbox" id="syncWL" checked>
-                                <label class="form-check-label small" for="syncWL">W/L</label>
-                            </div>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="checkbox" id="showCrosshairs" checked>
-                                <label class="form-check-label small" for="showCrosshairs">Crosshairs</label>
-                            </div>
-                        </div>
-                    </div>
 
-                    <div class="controls-group-right">
-                        <div class="control-group">
-                            <button class="btn btn-sm btn-secondary" id="resetBtn" title="Reset">
-                                <i class="bi bi-arrow-counterclockwise"></i>
-                            </button>
-                            <button class="btn btn-sm btn-secondary" id="invertBtn" title="Invert">
-                                <i class="bi bi-circle-half"></i>
-                            </button>
-                            <button class="btn btn-sm btn-secondary" id="flipHBtn" title="Flip Horizontal">
-                                <i class="bi bi-arrow-left-right"></i>
-                            </button>
-                            <button class="btn btn-sm btn-secondary" id="flipVBtn" title="Flip Vertical">
-                                <i class="bi bi-arrow-down-up"></i>
-                            </button>
-                            <button class="btn btn-sm btn-secondary" id="rotateLeftBtn" title="Rotate Left">
-                                <i class="bi bi-arrow-counterclockwise"></i>
-                            </button>
-                            <button class="btn btn-sm btn-secondary" id="rotateRightBtn" title="Rotate Right">
-                                <i class="bi bi-arrow-clockwise"></i>
-                            </button>
+                        <!-- MPR buttons -->
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button type="button" class="btn btn-outline-success" id="mprAxial" title="Axial">Axial</button>
+                            <button type="button" class="btn btn-outline-success" id="mprSagittal" title="Sagittal">Sagittal</button>
+                            <button type="button" class="btn btn-outline-success" id="mprCoronal" title="Coronal">Coronal</button>
+                            <button type="button" class="btn btn-outline-success" id="mprAll" title="All Views">All</button>
+                        </div>
+
+                        <!-- Insert/Clear buttons -->
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button class="btn btn-success" id="insertAllBtn" title="Insert All Images"><i class="bi bi-grid-fill"></i> Insert All</button>
+                            <button class="btn btn-danger" id="clearAllBtn" title="Clear All Viewports"><i class="bi bi-trash"></i> Clear All</button>
                         </div>
                     </div>
                 </div>
@@ -656,6 +572,24 @@ $userRole = $_SESSION['role'] ?? 'viewer';
                     <div class="col"><button data-tool="Probe"
                             class="btn btn-secondary w-100 tool-btn d-flex flex-column justify-content-center align-items-center"><i
                                 class="bi bi-eyedropper"></i><span class="small">Probe</span></button></div>
+                    <div class="col"><button id="resetBtn"
+                            class="btn btn-secondary w-100 tool-btn d-flex flex-column justify-content-center align-items-center"><i
+                                class="bi bi-arrow-counterclockwise"></i><span class="small">Reset</span></button></div>
+                    <div class="col"><button id="invertBtn"
+                            class="btn btn-secondary w-100 tool-btn d-flex flex-column justify-content-center align-items-center"><i
+                                class="bi bi-circle-half"></i><span class="small">Invert</span></button></div>
+                    <div class="col"><button id="flipHBtn"
+                            class="btn btn-secondary w-100 tool-btn d-flex flex-column justify-content-center align-items-center"><i
+                                class="bi bi-arrow-left-right"></i><span class="small">Flip H</span></button></div>
+                    <div class="col"><button id="flipVBtn"
+                            class="btn btn-secondary w-100 tool-btn d-flex flex-column justify-content-center align-items-center"><i
+                                class="bi bi-arrow-down-up"></i><span class="small">Flip V</span></button></div>
+                    <div class="col"><button id="rotateLeftBtn"
+                            class="btn btn-secondary w-100 tool-btn d-flex flex-column justify-content-center align-items-center"><i
+                                class="bi bi-arrow-counterclockwise"></i><span class="small">Rotate L</span></button></div>
+                    <div class="col"><button id="rotateRightBtn"
+                            class="btn btn-secondary w-100 tool-btn d-flex flex-column justify-content-center align-items-center"><i
+                                class="bi bi-arrow-clockwise"></i><span class="small">Rotate R</span></button></div>
                 </div>
             </div>
 
@@ -684,26 +618,6 @@ $userRole = $_SESSION['role'] ?? 'viewer';
                         <label class="form-label small text-light mb-1">Window Level</label>
                         <input type="range" class="form-range" id="levelSlider" min="-1000" max="1000" value="40">
                         <small class="text-muted" id="levelValue">40</small>
-                    </div>
-                </div>
-
-
-                <div class="p-3 border-bottom">
-                    <h6 class="text-light mb-2">AI Assistant</h6>
-                    <div class="d-grid gap-1">
-                        <button class="btn btn-sm btn-outline-info" id="autoAdjustWL">Auto W/L</button>
-                        <button class="btn btn-sm btn-outline-info" id="detectAbnormalities">Detect
-                            Abnormalities</button>
-                        <button class="btn btn-sm btn-outline-info" id="measureDistance">Smart Measure</button>
-                        <button class="btn btn-sm btn-outline-info" id="enhanceImage">Enhance Quality</button>
-                    </div>
-                    <div class="mt-2">
-                        <div id="aiSuggestions" class="small text-info" style="display: none;">
-                            <div class="bg-info bg-opacity-10 p-2 rounded">
-                                <strong>AI Suggestion:</strong>
-                                <div id="suggestionText">Ready to assist with image analysis</div>
-                            </div>
-                        </div>
                     </div>
                 </div>
 
@@ -765,13 +679,13 @@ $userRole = $_SESSION['role'] ?? 'viewer';
     <script src="<?= BASE_PATH ?>/js/components/upload-handler.js"></script>
     <script src="<?= BASE_PATH ?>/js/components/ui-controls.js"></script>
     <script src="<?= BASE_PATH ?>/js/components/event-handlers.js?v=<?= time() ?>"></script>
-    <script src="<?= BASE_PATH ?>/js/components/medical-notes.js?v=<?= time() ?>"></script>
     <script src="<?= BASE_PATH ?>/js/components/reporting-system.js?v=<?= time() ?>"></script>
     <script src="<?= BASE_PATH ?>/js/components/mouse-controls.js?v=<?= time() ?>"></script>
     <script src="<?= BASE_PATH ?>/js/components/export-manager.js?v=<?= time() ?>"></script>
-    <script src="<?= BASE_PATH ?>/js/components/print-manager.js?v=<?= time() ?>"></script>
+    <script src="<?= BASE_PATH ?>/js/components/print-manager-v3.js?v=<?= time() ?>"></script>
     <script src="<?= BASE_PATH ?>/js/components/settings-manager.js?v=<?= time() ?>"></script>
     <script src="<?= BASE_PATH ?>/js/components/mobile-controls.js?v=<?= time() ?>"></script>
+    <script src="<?= BASE_PATH ?>/js/components/mpr-button-handlers.js?v=<?= time() ?>"></script>
 
 
     <script src="https://unpkg.com/dicom-parser@1.8.21/dist/dicomParser.min.js"></script>
@@ -779,6 +693,7 @@ $userRole = $_SESSION['role'] ?? 'viewer';
 
     <!-- Load main application -->
     <script src="<?= BASE_PATH ?>/js/main.js"></script>
+    <script src="<?= BASE_PATH ?>/js/viewport-badge-updater.js?v=<?= time() ?>"></script>
     <script src="<?= BASE_PATH ?>/js/orthanc-autoload.js"></script>
     <script src="<?= BASE_PATH ?>/assets/js/ai-integration.js?v=<?= time() ?>"></script>
     <script src="<?= BASE_PATH ?>/assets/js/medical-report-generator.js?v=<?= time() ?>"></script>
@@ -962,6 +877,335 @@ $userRole = $_SESSION['role'] ?? 'viewer';
                 }
             });
         }
+    </script>
+
+    <!-- Custom Grid Selector Modal -->
+    <div id="customGridModal" class="modal fade" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Select Grid Layout</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <p class="mb-3">Select number of rows and columns:</p>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="gridRows" class="form-label">Rows:</label>
+                            <input type="number" class="form-control" id="gridRows" min="1" max="5" value="2">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="gridCols" class="form-label">Columns:</label>
+                            <input type="number" class="form-control" id="gridCols" min="1" max="5" value="2">
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <p class="text-muted small">Maximum: 5 rows × 5 columns (25 viewports)</p>
+                        <p id="gridPreview" class="fw-bold text-info">Grid: 2 × 2 (4 viewports)</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="applyCustomGrid">Apply Grid</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Grid Functionality -->
+    <script>
+        (function() {
+            const customGridBtn = document.getElementById('customGridBtn');
+            const customGridModal = new bootstrap.Modal(document.getElementById('customGridModal'));
+            const gridRowsInput = document.getElementById('gridRows');
+            const gridColsInput = document.getElementById('gridCols');
+            const gridPreview = document.getElementById('gridPreview');
+            const applyCustomGridBtn = document.getElementById('applyCustomGrid');
+
+            // Update preview when inputs change
+            function updatePreview() {
+                const rows = parseInt(gridRowsInput.value) || 1;
+                const cols = parseInt(gridColsInput.value) || 1;
+                const total = rows * cols;
+                gridPreview.textContent = `Grid: ${rows} × ${cols} (${total} viewport${total > 1 ? 's' : ''})`;
+            }
+
+            gridRowsInput.addEventListener('input', updatePreview);
+            gridColsInput.addEventListener('input', updatePreview);
+
+            // Show modal when button clicked
+            customGridBtn.addEventListener('click', function() {
+                customGridModal.show();
+            });
+
+            // Apply custom grid
+            applyCustomGridBtn.addEventListener('click', function() {
+                const rows = parseInt(gridRowsInput.value) || 1;
+                const cols = parseInt(gridColsInput.value) || 1;
+
+                // Validate
+                if (rows < 1 || rows > 5 || cols < 1 || cols > 5) {
+                    alert('Please enter valid rows and columns (1-5)');
+                    return;
+                }
+
+                const total = rows * cols;
+                if (total > 25) {
+                    alert('Maximum 25 viewports allowed (5×5)');
+                    return;
+                }
+
+                console.log(`Creating custom grid: ${rows} rows × ${cols} columns (${total} viewports)`);
+
+                // Close modal
+                customGridModal.hide();
+
+                // Create the custom grid layout
+                createCustomGridLayout(rows, cols);
+            });
+
+            function createCustomGridLayout(rows, cols) {
+                const viewportManager = window.DICOM_VIEWER.MANAGERS.viewportManager;
+                if (!viewportManager) {
+                    console.error('Viewport manager not initialized');
+                    return;
+                }
+
+                const layoutKey = `custom-${rows}x${cols}`;
+                const total = rows * cols;
+
+                // Generate viewport configuration
+                const viewports = [];
+                for (let i = 0; i < total; i++) {
+                    const row = Math.floor(i / cols);
+                    const col = i % cols;
+                    viewports.push({
+                        name: `viewport-${i + 1}`,
+                        gridArea: `${row + 1} / ${col + 1} / ${row + 2} / ${col + 2}`
+                    });
+                }
+
+                // Register the custom layout
+                viewportManager.layouts[layoutKey] = {
+                    rows: rows,
+                    cols: cols,
+                    viewports: viewports.map(v => v.name)
+                };
+
+                // Create viewports with custom layout
+                viewportManager.createViewports(layoutKey);
+
+                // Apply CSS Grid styling
+                const container = document.getElementById('viewport-container');
+                if (container) {
+                    container.style.display = 'grid';
+                    container.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+                    container.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+                    container.style.gap = '2px';
+                    container.style.width = '100%';
+                    container.style.height = '100%';
+                }
+
+                console.log(`Custom grid layout created: ${layoutKey}`);
+            }
+
+            // Initialize preview
+            updatePreview();
+        })();
+    </script>
+
+    <!-- Insert All and Clear All Functionality -->
+    <script>
+        (function() {
+            const insertAllBtn = document.getElementById('insertAllBtn');
+            const clearAllBtn = document.getElementById('clearAllBtn');
+
+            // Calculate optimal grid based on number of images
+            function calculateOptimalGrid(imageCount) {
+                if (imageCount === 0) return { rows: 1, cols: 1 };
+
+                const isPortrait = window.innerHeight > window.innerWidth;
+                const isLandscape = window.innerWidth > window.innerHeight;
+
+                // Portrait optimized layouts (more rows than columns)
+                const portraitLayouts = {
+                    2: { rows: 2, cols: 1 },
+                    6: { rows: 3, cols: 2 },
+                    8: { rows: 4, cols: 2 },
+                    15: { rows: 5, cols: 3 },
+                    18: { rows: 6, cols: 3 }
+                };
+
+                // Landscape optimized layouts (more columns than rows)
+                const landscapeLayouts = {
+                    4: { rows: 2, cols: 2 },
+                    9: { rows: 3, cols: 3 },
+                    12: { rows: 3, cols: 4 }
+                };
+
+                // Check for exact matches first
+                if (isPortrait && portraitLayouts[imageCount]) {
+                    return portraitLayouts[imageCount];
+                }
+                if (isLandscape && landscapeLayouts[imageCount]) {
+                    return landscapeLayouts[imageCount];
+                }
+
+                // For other numbers, calculate optimal grid
+                let cols = Math.ceil(Math.sqrt(imageCount));
+                let rows = Math.ceil(imageCount / cols);
+
+                // Adjust for orientation
+                if (isLandscape && rows > cols) {
+                    [rows, cols] = [cols, rows]; // Swap to prefer landscape
+                }
+                if (isPortrait && cols > rows) {
+                    [rows, cols] = [cols, rows]; // Swap to prefer portrait
+                }
+
+                // Limit to max 5x5
+                if (rows > 5) rows = 5;
+                if (cols > 5) cols = 5;
+
+                return { rows, cols };
+            }
+
+            // Insert All Images
+            insertAllBtn.addEventListener('click', async function() {
+                console.log('Insert All clicked');
+
+                // Get images from STATE (has correct database IDs)
+                const images = window.DICOM_VIEWER.STATE.currentSeriesImages;
+                if (!images || images.length === 0) {
+                    alert('No images available. Please load a study first.');
+                    return;
+                }
+
+                const imageCount = images.length;
+                console.log(`Found ${imageCount} images in STATE`);
+
+                // Calculate optimal grid
+                const grid = calculateOptimalGrid(imageCount);
+                console.log(`Calculated optimal grid: ${grid.rows}×${grid.cols} for ${imageCount} images`);
+
+                // Create custom grid layout
+                const layoutKey = `custom-${grid.rows}x${grid.cols}`;
+                const total = grid.rows * grid.cols;
+
+                const viewportManager = window.DICOM_VIEWER.MANAGERS.viewportManager;
+                if (!viewportManager) {
+                    console.error('Viewport manager not initialized');
+                    return;
+                }
+
+                // Generate viewport configuration
+                const viewports = [];
+                for (let i = 0; i < total; i++) {
+                    viewports.push(`viewport-${i + 1}`);
+                }
+
+                // Register the custom layout
+                viewportManager.layouts[layoutKey] = {
+                    rows: grid.rows,
+                    cols: grid.cols,
+                    viewports: viewports
+                };
+
+                // Create viewports
+                viewportManager.createViewports(layoutKey);
+
+                // Apply CSS Grid styling
+                const container = document.getElementById('viewport-container');
+                if (container) {
+                    container.style.display = 'grid';
+                    container.style.gridTemplateRows = `repeat(${grid.rows}, 1fr)`;
+                    container.style.gridTemplateColumns = `repeat(${grid.cols}, 1fr)`;
+                    container.style.gap = '2px';
+                    container.style.width = '100%';
+                    container.style.height = '100%';
+                }
+
+                // Wait for viewports to be created, then load images
+                setTimeout(async () => {
+                    const viewportElements = document.querySelectorAll('.viewport');
+                    console.log(`Created ${viewportElements.length} viewports`);
+
+                    if (viewportElements.length === 0) {
+                        console.error('No viewports found after creation');
+                        return;
+                    }
+
+                    // Enable cornerstone on all viewports first
+                    viewportElements.forEach(viewport => {
+                        try {
+                            if (!cornerstone.getEnabledElement(viewport)) {
+                                cornerstone.enable(viewport);
+                                console.log(`Enabled cornerstone on ${viewport.id}`);
+                            }
+                        } catch (e) {
+                            console.warn(`Viewport ${viewport.id} already enabled or error:`, e);
+                        }
+                    });
+
+                    // Wait a bit for cornerstone to initialize
+                    await new Promise(resolve => setTimeout(resolve, 200));
+
+                    // Load images into viewports using correct database IDs from STATE
+                    for (let i = 0; i < Math.min(imageCount, viewportElements.length); i++) {
+                        const viewport = viewportElements[i];
+                        const image = images[i];
+
+                        if (viewport && image) {
+                            // Get the correct database ID from STATE
+                            const fileId = image.id;
+
+                            if (fileId) {
+                                console.log(`Loading image ${i + 1}/${imageCount} (DB ID: ${fileId}) into viewport ${viewport.id}`);
+                                try {
+                                    await window.DICOM_VIEWER.loadImageInViewport(viewport, fileId);
+
+                                    // Fit to window after loading
+                                    try {
+                                        cornerstone.fitToWindow(viewport);
+                                        console.log(`Fitted image ${fileId} to viewport ${viewport.id}`);
+                                    } catch (e) {
+                                        console.warn('Error fitting viewport:', e);
+                                    }
+                                } catch (error) {
+                                    console.error(`Error loading image ${fileId}:`, error);
+                                }
+                            }
+                        }
+                    }
+
+                    console.log(`Loaded ${Math.min(imageCount, viewportElements.length)} images successfully`);
+                }, 1000);
+            });
+
+            // Clear All Viewports
+            clearAllBtn.addEventListener('click', function() {
+                if (!confirm('Are you sure you want to clear all viewports?')) {
+                    return;
+                }
+
+                console.log('Clear All clicked');
+
+                const viewports = document.querySelectorAll('.viewport');
+                viewports.forEach(viewport => {
+                    try {
+                        if (cornerstone.getEnabledElement(viewport)) {
+                            cornerstone.disable(viewport);
+                            cornerstone.enable(viewport);
+                            console.log(`Cleared viewport ${viewport.id}`);
+                        }
+                    } catch (error) {
+                        console.error(`Error clearing viewport ${viewport.id}:`, error);
+                    }
+                });
+
+                console.log('All viewports cleared');
+            });
+        })();
     </script>
 </body>
 

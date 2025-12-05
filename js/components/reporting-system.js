@@ -1293,44 +1293,59 @@ async checkAndShowReportStatus() {
     }
 
     async checkAllSeriesImagesForReports(images) {
-        console.log('=== CHECKING ALL SERIES IMAGES FOR REPORTS ===');
+        console.log('=== CHECKING ALL SERIES IMAGES FOR REPORTS (OPTIMIZED BATCH) ===');
         
-        const reportStatuses = new Map();
-        const checkPromises = [];
+        // OPTIMIZATION: Prevent ERR_INSUFFICIENT_RESOURCES by limiting and batching requests
+        const MAX_IMAGES_TO_CHECK = 100; // Only check first 100 images
+        const BATCH_SIZE = 5; // Check 5 images at a time
+        const BATCH_DELAY = 200; // 200ms delay between batches
         
-        for (const image of images) {
-            const promise = this.checkSingleImageForReport(image.id, image.study_instance_uid)
-                .then(hasReport => {
-                    reportStatuses.set(image.id, hasReport);
-                    return { imageId: image.id, hasReport };
-                })
-                .catch(error => {
-                    console.error(`Error checking report for ${image.id}:`, error);
-                    return { imageId: image.id, hasReport: false };
-                });
-            
-            checkPromises.push(promise);
+        if (images.length > MAX_IMAGES_TO_CHECK) {
+            console.log(`Series has ${images.length} images. Only checking first ${MAX_IMAGES_TO_CHECK} for reports to prevent resource exhaustion.`);
+            images = images.slice(0, MAX_IMAGES_TO_CHECK);
         }
         
-        const results = await Promise.all(checkPromises);
-        
+        const results = [];
         let reportCount = 0;
         
-        setTimeout(() => {
-            results.forEach(result => {
+        // Process in batches to avoid overwhelming the browser
+        for (let i = 0; i < images.length; i += BATCH_SIZE) {
+            const batch = images.slice(i, i + BATCH_SIZE);
+            
+            const batchPromises = batch.map(async (image) => {
+                try {
+                    const hasReport = await this.checkSingleImageForReport(image.id, image.study_instance_uid);
+                    return { imageId: image.id, hasReport };
+                } catch (error) {
+                    // Silently handle errors to avoid console spam with large series
+                    return { imageId: image.id, hasReport: false };
+                }
+            });
+            
+            const batchResults = await Promise.all(batchPromises);
+            results.push(...batchResults);
+            
+            // Process results immediately for this batch - add badges
+            batchResults.forEach(result => {
                 if (result.hasReport) {
                     reportCount++;
                     this.addReportIndicatorToSeriesItem(result.imageId);
                 }
             });
             
-            console.log(`Found ${reportCount} reports out of ${images.length} images`);
-            
-            if (reportCount > 0) {
-                window.DICOM_VIEWER.showAISuggestion(`Found ${reportCount} medical report${reportCount > 1 ? 's' : ''} in this series`);
+            // Wait between batches to avoid overwhelming the browser
+            if (i + BATCH_SIZE < images.length) {
+                await new Promise(resolve => setTimeout(resolve, BATCH_DELAY));
             }
-        }, 2000);
+        }
         
+        console.log(`Found ${reportCount} reports out of ${results.length} images checked`);
+        
+        if (reportCount > 0) {
+            window.DICOM_VIEWER.showAISuggestion(`Found ${reportCount} medical report${reportCount > 1 ? 's' : ''} in this series`);
+        }
+        
+        // Also check the current image
         await this.checkCurrentImageForReports();
     }
 

@@ -3,46 +3,84 @@
  * Enhanced with better error handling and debugging
  */
 
-(function() {
-    let viewerReady = false;
-    let domReady = false;
-    
-    document.addEventListener('DOMContentLoaded', function() {
-        domReady = true;
-        checkAndLoad();
-    });
-    
-    setTimeout(() => {
-        viewerReady = true;
-        checkAndLoad();
-    }, 2000);
-    
+(function () {
+    'use strict';
+
+    console.log('Orthanc auto-load script initializing...');
+
+    // Expose autoloader function globally for debugging
+    window.DICOM_VIEWER = window.DICOM_VIEWER || {};
+
+    // Main autoload function - exposed globally
+    window.DICOM_VIEWER.autoLoadFromOrthanc = async function (studyIdentifier) {
+        console.log('autoLoadFromOrthanc called with:', studyIdentifier);
+        await autoLoadStudyFromOrthanc(studyIdentifier);
+    };
+
+    // Check if viewer is ready by looking for key components
+    function isViewerReady() {
+        return window.DICOM_VIEWER &&
+            window.DICOM_VIEWER.loadImageSeries &&
+            window.DICOM_VIEWER.MANAGERS &&
+            window.DICOM_VIEWER.MANAGERS.viewportManager;
+    }
+
+    // Wait for viewer to be ready with retries
+    async function waitForViewer(maxRetries = 20, interval = 250) {
+        for (let i = 0; i < maxRetries; i++) {
+            if (isViewerReady()) {
+                console.log('✓ DICOM Viewer is ready after', i * interval, 'ms');
+                return true;
+            }
+            await new Promise(resolve => setTimeout(resolve, interval));
+        }
+        console.error('✗ DICOM Viewer not ready after', maxRetries * interval, 'ms');
+        return false;
+    }
+
+    // Main check and load function
     async function checkAndLoad() {
-        if (!domReady || !viewerReady) return;
-        
+        console.log('checkAndLoad: Starting...');
+
+        // Wait for viewer to be fully initialized
+        const viewerReady = await waitForViewer();
+        if (!viewerReady) {
+            console.error('checkAndLoad: Viewer not ready, aborting autoload');
+            return;
+        }
+
         const urlParams = new URLSearchParams(window.location.search);
+
+        // Support multiple parameter types
         const studyUID = urlParams.get('studyUID');
-        
-        if (studyUID) {
-            console.log('Auto-loading study:', studyUID);
-            await autoLoadStudyFromOrthanc(studyUID);
+        const orthancId = urlParams.get('orthancId');
+        const studyId = urlParams.get('study_id');
+
+        // Determine which ID to use (priority: studyUID > orthancId > study_id)
+        const studyIdentifier = studyUID || orthancId || studyId;
+
+        if (studyIdentifier) {
+            console.log('checkAndLoad: Found study identifier:', studyIdentifier);
+            await autoLoadStudyFromOrthanc(studyIdentifier);
+        } else {
+            console.log('checkAndLoad: No study identifier found in URL parameters');
         }
     }
-    
+
     async function autoLoadStudyFromOrthanc(studyUID) {
         try {
             showLoadingIndicator('Connecting to PACS server...');
-            
+
             const basePath = window.basePath || '';
             const url = `${basePath}/api/load_study_fast.php?studyUID=${encodeURIComponent(studyUID)}`;
             console.log('Fetching from:', url);
 
             const response = await fetch(url);
             const text = await response.text();
-            
+
             console.log('Response status:', response.status);
             console.log('Response text:', text.substring(0, 500));
-            
+
             let data;
             try {
                 data = JSON.parse(text);
@@ -50,19 +88,19 @@
                 console.error('JSON parse error:', e);
                 throw new Error('Invalid response from server. Check PHP errors.');
             }
-            
+
             if (!response.ok || !data.success) {
                 console.error('API Error:', data);
                 throw new Error(data.error || 'Failed to load study');
             }
-            
+
             showLoadingIndicator(`Loading ${data.imageCount} images...`);
             console.log('Study loaded:', data.imageCount, 'images');
-            
+
             if (!data.images || data.images.length === 0) {
                 throw new Error('No images found in study');
             }
-            
+
             // Convert images to format expected by main viewer
             const formattedImages = data.images.map((img, index) => ({
                 id: img.instanceId,
@@ -77,28 +115,28 @@
                 study_instance_uid: data.studyUID,
                 originalIndex: index
             }));
-            
+
             console.log('Formatted', formattedImages.length, 'images');
-            
+
             showLoadingIndicator('Initializing viewer...');
-            
+
             if (window.DICOM_VIEWER && window.DICOM_VIEWER.loadImageSeries) {
                 window.DICOM_VIEWER.populateSeriesList(formattedImages);
                 await window.DICOM_VIEWER.loadImageSeries(formattedImages);
             } else {
                 throw new Error('DICOM Viewer not initialized. Please refresh the page.');
             }
-            
+
             hideLoadingIndicator();
             console.log('✅ Study loaded successfully');
-            
+
         } catch (error) {
             console.error('❌ Error loading study:', error);
             hideLoadingIndicator();
-            
+
             // Enhanced error message
             let errorMessage = error.message;
-            
+
             if (errorMessage.includes('401') || errorMessage.includes('Unauthorized')) {
                 errorMessage = 'Authentication failed. Please login again.';
                 setTimeout(() => {
@@ -107,18 +145,18 @@
                 }, 2000);
             } else if (errorMessage.includes('Failed to load instances')) {
                 errorMessage = 'Cannot connect to PACS server. Please check:\n\n' +
-                              '1. Orthanc is running (run START_ORTHANC.bat)\n' +
-                              '2. Connection settings in config.php\n' +
-                              '3. Run diagnose_orthanc.php for detailed diagnostics';
+                    '1. Orthanc is running (run START_ORTHANC.bat)\n' +
+                    '2. Connection settings in config.php\n' +
+                    '3. Run diagnose_orthanc.php for detailed diagnostics';
             } else if (errorMessage.includes('Study not found')) {
                 errorMessage = 'Study not found in PACS.\n\n' +
-                              'The study may have been deleted or the UID is incorrect.';
+                    'The study may have been deleted or the UID is incorrect.';
             }
-            
+
             showError(errorMessage);
         }
     }
-    
+
     function showLoadingIndicator(message) {
         let indicator = document.getElementById('autoLoadIndicator');
         if (!indicator) {
@@ -146,17 +184,17 @@
         `;
         indicator.style.display = 'block';
     }
-    
+
     function hideLoadingIndicator() {
         const indicator = document.getElementById('autoLoadIndicator');
         if (indicator) {
             indicator.style.display = 'none';
         }
     }
-    
+
     function showError(message) {
         hideLoadingIndicator();
-        
+
         // Create a better error modal
         const modal = document.createElement('div');
         modal.style.cssText = `
@@ -172,7 +210,7 @@
             max-width: 500px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.5);
         `;
-        
+
         modal.innerHTML = `
             <div style="display: flex; align-items: center; margin-bottom: 20px;">
                 <i class="bi bi-exclamation-triangle-fill" style="color: #f48771; font-size: 32px; margin-right: 15px;"></i>
@@ -190,7 +228,7 @@
                 </button>
             </div>
         `;
-        
+
         // Add backdrop
         const backdrop = document.createElement('div');
         backdrop.style.cssText = `
@@ -206,10 +244,23 @@
             backdrop.remove();
             modal.remove();
         };
-        
+
         document.body.appendChild(backdrop);
         document.body.appendChild(modal);
     }
+
+    // Initialize on DOM ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('Orthanc autoload: DOMContentLoaded fired');
+            checkAndLoad();
+        });
+    } else {
+        // DOM is already ready
+        console.log('Orthanc autoload: DOM already ready, starting checkAndLoad');
+        checkAndLoad();
+    }
 })();
 
-console.log('Orthanc auto-load script loaded (Enhanced Version)');
+console.log('Orthanc auto-load script loaded (Enhanced Version with Orthanc ID support)');
+

@@ -1,76 +1,59 @@
-# Hospital DICOM Viewer Pro v2.0 - Git Ignore
-
-# Environment Configuration
-config/.env
-.env
-
-# Composer
+# Vendor dependencies
 /vendor/
-composer.lock
 
-# Logs
-/logs/*.log
-/logs/*.txt
-*.log
+# Environment configuration
+/includes/config.php
 
-# IDE
-.vscode/
+# Uploads and user data
+/assets/uploads/*
+!/assets/uploads/.gitkeep
+
+# Backups
+/backups/temp/*
+!/backups/temp/.gitkeep
+/backups/*.sql
+/backups/*.zip
+
+# IDE and editor files
 .idea/
-*.sublime-project
-*.sublime-workspace
-.DS_Store
-Thumbs.db
-
-# Temporary Files
-*.tmp
-*.temp
+.vscode/
 *.swp
 *.swo
 *~
+.DS_Store
 
-# Uploaded Files (DICOM data should be in Orthanc, not repo)
-/uploads/*
-!/uploads/.gitkeep
+# Logs
+*.log
 
-# Backups
-/backups/*.zip
-/backups/*.sql
-!/backups/.gitkeep
+# Claude Code personal settings
+.claude/settings.local.json
 
-# Cache
-/cache/*
-!/cache/.gitkeep
-
-# Session Files
-/sessions/*
-!/sessions/.gitkeep
-
-# Database Dumps
+# Database dumps
 *.sql
-!setup/schema_v2_production.sql
+!setup/*.sql
 !database/migrations/*.sql
 
-# Windows
-desktop.ini
-ehthumbs.db
+# Temporary files
+*.tmp
+*.bak
+.cache/
 
-# macOS
-.AppleDouble
-.LSOverride
-
-# Node (if using any build tools in future)
-node_modules/
-package-lock.json
-
-# Google API Credentials
-credentials.json
-token.json
-
-# NSSM Executable (download separately)
-scripts/nssm.exe
-
-# Test Coverage
-/tests/coverage/
+# OS files
+Thumbs.db
+Desktop.ini
 
 # PHP
-/.phpunit.cache
+.php_cs.cache
+.phpunit.result.cache
+
+# Node modules
+node_modules/
+
+# Composer
+composer.lock
+
+# Original/backup code
+/original/
+
+# Test files
+/test-*.html

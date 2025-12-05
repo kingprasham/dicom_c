@@ -464,12 +464,15 @@ $importStats['backed_up_count'] = $backupCount['backed_up_count'] ?? 0;
                     </div>
                 </div>
                 <div class="col-md-6">
-                    <div class="d-flex gap-2">
+                    <div class="d-flex gap-2 flex-wrap">
                         <button type="button" class="btn btn-success" id="manualSyncBtn">
                             <i class="bi bi-arrow-repeat"></i> Sync Now
                         </button>
                         <button type="button" class="btn btn-outline-info" id="checkNewFoldersBtn">
                             <i class="bi bi-folder-check"></i> Check for New Folders
+                        </button>
+                        <button type="button" class="btn btn-primary" id="syncAllDicomBtn">
+                            <i class="bi bi-database-fill-add"></i> Sync All DICOM Files
                         </button>
                     </div>
                 </div>
@@ -1286,6 +1289,7 @@ $importStats['backed_up_count'] = $backupCount['backed_up_count'] ?? 0;
             document.getElementById('saveMonitorPathBtn').addEventListener('click', addMonitoredPath);
             document.getElementById('manualSyncBtn').addEventListener('click', triggerManualSync);
             document.getElementById('checkNewFoldersBtn').addEventListener('click', checkNewFolders);
+            document.getElementById('syncAllDicomBtn').addEventListener('click', syncAllDicomFiles);
         });
         
         async function loadMonitoredPaths() {
@@ -1524,6 +1528,95 @@ $importStats['backed_up_count'] = $backupCount['backed_up_count'] ?? 0;
             } catch (error) {
                 console.error('Orthanc sync error:', error);
                 throw error;
+            }
+        }
+
+        async function syncAllDicomFiles() {
+            const btn = document.getElementById('syncAllDicomBtn');
+            const originalText = btn.innerHTML;
+
+            // Show status
+            const statusDiv = document.getElementById('autoSyncStatus');
+            const statusText = document.getElementById('syncStatusText');
+
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Scanning...';
+            btn.disabled = true;
+            statusDiv.style.display = 'block';
+            statusText.textContent = 'Scanning monitored paths for DICOM files...';
+
+            try {
+                // First, check how many files need to be imported
+                const checkResponse = await fetch(`${basePath}/api/hospital-config/auto-sync.php?action=sync_missing_files`);
+                const checkData = await checkResponse.json();
+
+                if (!checkData.success) {
+                    throw new Error(checkData.error || 'Failed to scan for files');
+                }
+
+                const newFilesCount = checkData.new_files || 0;
+                const totalFiles = checkData.total_files_found || 0;
+
+                if (newFilesCount === 0) {
+                    statusText.textContent = `All ${totalFiles} DICOM files are already imported. Nothing to sync.`;
+                    alert(`All ${totalFiles} DICOM files in the monitored path are already imported!`);
+                    return;
+                }
+
+                // Confirm import
+                if (!confirm(`Found ${newFilesCount} new DICOM file(s) out of ${totalFiles} total.\n\nDo you want to import them now? This may take a while.`)) {
+                    statusText.textContent = 'Import cancelled by user';
+                    return;
+                }
+
+                // Start import
+                statusText.textContent = `Importing ${newFilesCount} DICOM files...`;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Importing...';
+
+                const importResponse = await fetch(`${basePath}/api/hospital-config/auto-sync.php?action=import_missing_files`);
+                const importData = await importResponse.json();
+
+                if (!importData.success) {
+                    throw new Error(importData.error || 'Import failed');
+                }
+
+                // Sync Orthanc data to cached tables so patients appear immediately
+                statusText.textContent = 'Syncing Orthanc data to database...';
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Syncing...';
+
+                const syncResponse = await fetch(`${basePath}/api/sync_orthanc_api.php`);
+                const syncData = await syncResponse.json();
+
+                if (!syncData.success) {
+                    console.warn('Sync warning:', syncData.message || 'Partial sync failure');
+                    statusText.textContent = `Import completed with warnings. ${importData.imported} files imported.`;
+                } else {
+                    const patientsCount = syncData.stats?.total_patients || 0;
+                    const studiesCount = syncData.stats?.total_studies || 0;
+                    statusText.textContent = `Import and sync completed! ${importData.imported} files imported, ${patientsCount} patients synced.`;
+                }
+
+                const patientsCount = syncData.stats?.total_patients || 0;
+                const studiesCount = syncData.stats?.total_studies || 0;
+
+                alert(`Import Completed!\n\nImported: ${importData.imported}\nSkipped (already exists): ${importData.skipped}\nErrors: ${importData.errors}\n\nPatients synced: ${patientsCount}\nStudies synced: ${studiesCount}\n\nBatch ID: ${importData.batch_id}`);
+
+                // Reload the page to show new studies
+                if (confirm('Would you like to reload the page to see the newly imported studies?')) {
+                    window.location.reload();
+                }
+
+            } catch (error) {
+                console.error('Sync error:', error);
+                statusText.textContent = 'Error: ' + error.message;
+                alert('Error during sync: ' + error.message);
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+
+                // Hide status after 5 seconds
+                setTimeout(() => {
+                    statusDiv.style.display = 'none';
+                }, 5000);
             }
         }
     </script>
