@@ -295,35 +295,26 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
 // Enhanced reporting integration
+// NOTE: The createMedicalReport and medicalReportBtn click handlers are now managed by
+// advanced-reporting-system.js which provides auto-detection of modality and structured templates
 window.DICOM_VIEWER.initializeReportingFeatures = function () {
-    // Add event listener for Create Medical Report button
-    document.getElementById('createMedicalReport')?.addEventListener('click', (e) => {
-        e.preventDefault();
+    // The old modal-based template selector is disabled in favor of advanced-reporting-system.js
+    // which provides auto-detection and better UX
 
-        const state = window.DICOM_VIEWER.STATE;
-
-        if (!state.currentSeriesImages || state.currentSeriesImages.length === 0) {
-            window.DICOM_VIEWER.showAISuggestion('Please load DICOM images before creating a report');
-            return;
-        }
-
-        if (window.DICOM_VIEWER.MANAGERS.reportingSystem) {
-            window.DICOM_VIEWER.MANAGERS.reportingSystem.enterReportingMode();
-        } else {
-            console.error('Reporting system not initialized');
-            window.DICOM_VIEWER.showAISuggestion('Reporting system not available');
-        }
-    });
-
-    // Add keyboard shortcut for reporting (Ctrl+R)
+    // Keyboard shortcut for reporting (Ctrl+R) - triggers the advanced reporting system
     document.addEventListener('keydown', (e) => {
         if (e.ctrlKey && e.key === 'r') {
             e.preventDefault();
-            document.getElementById('createMedicalReport')?.click();
+            // Use the advanced reporting system if available
+            if (window.DICOM_VIEWER.MANAGERS.advancedReporting) {
+                window.DICOM_VIEWER.MANAGERS.advancedReporting.openReportingInterface();
+            } else {
+                document.getElementById('medicalReportBtn')?.click();
+            }
         }
     });
 
-    console.log('Reporting features initialized');
+    console.log('Reporting features initialized (using Advanced Reporting System)');
 };
 // ===== GLOBAL UTILITY FUNCTIONS =====
 
@@ -1493,14 +1484,26 @@ window.DICOM_VIEWER.updatePatientInfo = function (data) {
 
 // New function to update the patient info bar in the NAVBAR (#13)
 window.DICOM_VIEWER.updateViewerPatientInfoBar = function (data) {
+    // Debug logging
+    console.log('=== updateViewerPatientInfoBar called ===');
+    console.log('Data received:', data);
+    console.log('Patient name:', data?.patient_name);
+    console.log('Patient ID:', data?.patient_id);
+
     // Update navbar patient info
     const navbarInfo = document.getElementById('navbar-patient-info');
-    if (!navbarInfo) return;
+    if (!navbarInfo) {
+        console.warn('navbar-patient-info element not found!');
+        return;
+    }
 
     // Show the info bar when we have data
     if (data && (data.patient_name || data.patient_id)) {
         navbarInfo.style.display = 'flex';
         navbarInfo.style.cssText = 'display: flex !important;';
+        console.log('Navbar info display set to flex');
+    } else {
+        console.warn('No patient name or ID found in data');
     }
 
     // Update patient name

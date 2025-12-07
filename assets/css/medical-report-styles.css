@@ -154,9 +154,62 @@
     #medicalReportModal .col-md-3 {
         display: none !important;
     }
-    
+
     #medicalReportModal .col-md-6 {
         width: 100% !important;
         max-width: 100% !important;
     }
+}
+
+/* OCR Measurement Extraction Styles */
+.measurements-section.ocr-extracted {
+    background: rgba(255, 193, 7, 0.1);
+    border: 1px solid rgba(255, 193, 7, 0.3);
+    border-radius: 8px;
+}
+
+.measurements-section.ocr-extracted .measurements-header {
+    background: rgba(255, 193, 7, 0.15);
+    border-bottom: 1px solid rgba(255, 193, 7, 0.2);
+}
+
+.measurements-section .measurement-source {
+    font-size: 9px;
+    padding: 2px 6px;
+    margin-left: 5px;
+}
+
+.measurements-section .measurement-source.ocr {
+    background: rgba(255, 193, 7, 0.3) !important;
+    color: #ffc107;
+}
+
+/* OCR Progress Overlay Animation */
+#ocr-progress-overlay .spinner-border {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* OCR Measurements editable inputs */
+.measurements-section.ocr-extracted .measurement-input {
+    border-color: rgba(255, 193, 7, 0.5);
+}
+
+.measurements-section.ocr-extracted .measurement-input:focus {
+    border-color: #ffc107;
+    box-shadow: 0 0 0 0.2rem rgba(255, 193, 7, 0.25);
+}
+
+/* OCR Warning badge pulse */
+.measurements-section.ocr-extracted .badge.bg-warning {
+    animation: pulse-warning 2s infinite;
+}
+
+@keyframes pulse-warning {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
 }

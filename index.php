@@ -406,7 +406,7 @@ $userRole = $_SESSION['role'] ?? 'viewer';
             </a>
             
             <!-- Patient Info in Navbar -->
-            <div id="navbar-patient-info" class="d-flex align-items-center gap-2 ms-3" style="display: none !important;">
+            <div id="navbar-patient-info" class="d-flex align-items-center gap-2 ms-3" style="display: none;">
                 <span class="badge bg-dark border border-secondary d-flex align-items-center gap-1">
                     <i class="bi bi-person-fill text-primary"></i>
                     <span id="nav-patient-name">-</span>
@@ -448,6 +448,7 @@ $userRole = $_SESSION['role'] ?? 'viewer';
                         <li><a class="dropdown-item" href="#" id="exportReport"><i class="bi bi-file-text me-2"></i>Export Report</a></li>
                     </ul>
                 </div>
+                <button class="btn btn-info" id="medicalReportBtn" title="Medical Report"><i class="bi bi-file-medical me-1"></i>Report</button>
                 <button class="btn btn-secondary" id="printBtn" title="Print DICOM Image"><i class="bi bi-printer me-1"></i>Print</button>
                 <button class="btn btn-secondary" id="settingsBtn" title="Settings"><i class="bi bi-gear me-1"></i>Settings</button>
                 <button class="btn btn-secondary" id="fullscreenBtn" title="Fullscreen"><i class="bi bi-arrows-fullscreen"></i></button>
@@ -697,6 +698,8 @@ $userRole = $_SESSION['role'] ?? 'viewer';
     <script src="<?= BASE_PATH ?>/js/orthanc-autoload.js"></script>
     <script src="<?= BASE_PATH ?>/assets/js/ai-integration.js?v=<?= time() ?>"></script>
     <script src="<?= BASE_PATH ?>/assets/js/medical-report-generator.js?v=<?= time() ?>"></script>
+    <script src="<?= BASE_PATH ?>/js/components/ocr-measurement-extractor.js?v=<?= time() ?>"></script>
+    <script src="<?= BASE_PATH ?>/js/components/advanced-reporting-system.js?v=<?= time() ?>"></script>
 
     <script>
         // Fix sidebar visibility on load

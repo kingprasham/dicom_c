@@ -339,6 +339,17 @@ showButtonContainer() {
     }
 
     enterReportingMode() {
+        // DISABLED: The old reporting system modal is replaced by advanced-reporting-system.js
+        // which provides auto-detection of modality and structured RSNA-based templates
+        console.log('Old reporting mode disabled - using Advanced Reporting System instead');
+
+        // Trigger the advanced reporting system if available
+        if (window.DICOM_VIEWER.MANAGERS.advancedReporting) {
+            window.DICOM_VIEWER.MANAGERS.advancedReporting.openReportingInterface();
+            return;
+        }
+
+        // Fallback to old behavior only if advanced system not available
         if (this.reportingMode) return;
 
         console.log('Entering reporting mode...');
